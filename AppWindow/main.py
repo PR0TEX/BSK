@@ -62,6 +62,10 @@ class AppWindow(QWidget):
         # Create the button press handlers
         def test_button_pressed():
             # hide all existing widgets and unhide all widgets for the message selection
+            label.hide()
+            test_button.hide()
+
+
 
             pass
 
