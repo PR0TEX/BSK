@@ -1,14 +1,28 @@
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization,hashes
 
-#warto wspomniec ze 1024 zostal zlamany i nie jest bezpieczne
-# zalecane 2048 i 4096
 def generate_rsa(key_size):
 
     private_key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
     public_key = private_key.public_key()
 
-    return (public_key,private_key)
+    save_to_pem(public_key, "public_key.pem", False)
+    save_to_pem(private_key, "private_key.pem", True)
+
+def save_to_pem(key, name, is_private):
+    if is_private:
+        with open(name, "wb") as f:
+            f.write(key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption()
+            ))
+    else:
+        with open(name, "wb") as f:
+            f.write(key.public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo
+            ))
 
 def sign_message(message, private_key):
     return private_key.sign(
@@ -30,4 +44,4 @@ def verify_sender(signature, message, public_key):
         ),
         hashes.SHA256())
 
-
+generate_rsa(2048)
