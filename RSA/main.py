@@ -9,6 +9,8 @@ def generate_rsa(key_size):
     save_to_pem(public_key, "public_key.pem", False)
     save_to_pem(private_key, "private_key.pem", True)
 
+    return private_key, public_key
+
 def save_to_pem(key, name, is_private):
     if is_private:
         with open(name, "wb") as f:
@@ -44,4 +46,8 @@ def verify_sender(signature, message, public_key):
         ),
         hashes.SHA256())
 
-generate_rsa(2048)
+
+private_key, public_key = generate_rsa(2048)
+
+print("Private Key:\n", private_key.private_bytes(encoding=serialization.Encoding.PEM, format=serialization.PrivateFormat.PKCS8, encryption_algorithm=serialization.NoEncryption()).decode())
+print("Public Key:\n", public_key.public_bytes(encoding=serialization.Encoding.PEM, format=serialization.PublicFormat.SubjectPublicKeyInfo).decode())
