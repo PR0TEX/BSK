@@ -9,10 +9,7 @@ def send_message(ip, port, socket, message):
         print("message successfully send\n")
 
 
-def reply(ip, port, message):
-    print("Connection started\n")
-    send_message(ip, port, my_socket, message)
-
+def reply_message():
     while True:
         response = my_socket.recvfrom(1024)
         if response:
@@ -30,6 +27,15 @@ def reply(ip, port, message):
             else:
                 break
 
+def replay_file(filename):
+    with open(filename, "rb") as file:
+        # Read and send the file in chunks
+        chunk = file.read(1024)
+        while chunk:
+            my_socket.send(chunk)
+            chunk = file.read(1024)
+
+
 def close_room():
     print("Disconnected")
     my_socket.close()
@@ -40,7 +46,9 @@ def main():
     room_ip = input("Enter IP to start chat\n")
     room_port = 2222
     init_message = input("Enter message \n")
-    reply(room_ip, room_port, init_message)
+    print("Connection started\n")
+    send_message(room_ip, room_port, my_socket, init_message)
+    reply_message()
 
 
 if __name__ == "__main__":

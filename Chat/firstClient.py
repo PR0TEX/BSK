@@ -13,6 +13,13 @@ def send_message(ip, port, socket, message):
     if response:
         print("message successfully send\n")
 
+def send_file(filename):
+    with open(filename, "rb") as file:
+        # Read and send the file in chunks
+        chunk = file.read(1024)
+        while chunk:
+            room_socket.send(chunk)
+            chunk = file.read(1024)
 
 def start_room():
     print("Room started")
