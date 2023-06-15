@@ -11,7 +11,7 @@ def create_room_udp(ip, port):
 
 def create_room_tcp(ip, port):
     global room_socket
-    room_socket = socket.socket()
+    room_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     room_socket.bind((ip, port))
 
 
@@ -32,24 +32,25 @@ def send_file(filename, ip, port):
     create_room_tcp("192.168.1.24", 2222)
     room_socket.sendto(f"{filename}".encode(), ip, port)
 
+
 def receive_file():
     create_room_tcp("192.168.1.24", 2222)
-    response = room_socket.recvfrom(BUFFER_SIZE)
+    room_socket.listen(5)
+     # response = room_socket..(BUFFER_SIZE)
     while True:
-        if response:
-            client_socket, address = room_socket.accept()
-            filename = client_socket.recv(BUFFER_SIZE).decode()
-            filename = os.path.basename(filename)
-            break
+        client_socket, address = room_socket.accept()
+        filename = client_socket.recv(BUFFER_SIZE).decode()
+        filename = os.path.basename(filename)
+        break
 
     with open(filename, "wb") as f:
         while True:
             # read 1024 bytes from the socket (receive)
             bytes_read = client_socket.recv(BUFFER_SIZE)
-            if not bytes_read:
-                # nothing is received
-                # file transmitting is done
-                break
+            # if not bytes_read:
+            #     # nothing is received
+            #     # file transmitting is done
+            #     break
             # write to the file the bytes we just received
             f.write(bytes_read)
 

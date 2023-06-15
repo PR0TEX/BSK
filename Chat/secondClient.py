@@ -73,7 +73,7 @@ def main():
     # send_message(room_ip, room_port, my_socket, init_message)
     # reply_message()
 
-    send_file(room_ip, room_port, "test.txt")
+    send_file(room_ip, room_port, "./test.txt")
 
 
 if __name__ == "__main__":
