@@ -1,9 +1,12 @@
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QRadioButton
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QLineEdit, QPushButton, QRadioButton, QDialog
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtCore import Qt
 
+from AppWindow.dialogs import CustomDialog
+from utils import is_valid_ip
+import dialogs
 
-class AppWindow(QWidget):
+class AppWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("SCS Project - Encrypted Data Transmission")
@@ -37,15 +40,17 @@ class AppWindow(QWidget):
                 }
                 """
 
-        test_button = QPushButton("Test - no login", self)
-        test_button.setGeometry(140, 240, 200, 50)
-        test_button.setStyleSheet(button_style)
+        # Login page
+        create_room_button = QPushButton("Create room", self)
+        create_room_button.setGeometry(140, 240, 200, 50)
+        create_room_button.setStyleSheet(button_style)
 
-        login_button = QPushButton("Login - not implemented", self)
-        login_button.setGeometry(380, 240, 200, 50)
-        login_button.setStyleSheet(button_style)
+        connect_to_room_button = QPushButton("Connect to room", self)
+        connect_to_room_button.setGeometry(380, 240, 200, 50)
+        connect_to_room_button.setStyleSheet(button_style)
 
-        send_message_button = QPushButton("Send Message - not implemented", self)
+        # After logging in
+        send_message_button = QPushButton("Send Message", self)
         send_message_button.setGeometry(200, 60, 320, 60)
         send_message_button.setStyleSheet(button_style)
         send_message_button.hide()
@@ -60,20 +65,71 @@ class AppWindow(QWidget):
         logout_button.setStyleSheet(button_style)
         logout_button.hide()
 
+        # Sending message GUI
+        label_message = QLabel(self)
+        label_message.setText('Enter message:')
+        label_message.setFont(QFont('Tahoma', 15))
+        label_message.setAlignment(Qt.AlignCenter)
+        label_message.setGeometry(0, 50, 720, 30)
+        label_message.hide()
+
+        message_field = QLineEdit(self)
+        message_field.setGeometry(140, 110, 440, 50)  # set the position and size of the key_field widget
+        message_field.setStyleSheet("background-color: #ffffff; color: #2c2f33; border-radius: 10px; font-family: Arial; font-size: 16px;")
+        message_field.hide()
+
+        label_encoding = QLabel(self)
+        label_encoding.setText('Select encoding:')
+        label_encoding.setFont(QFont('Tahoma', 15))
+        label_encoding.setAlignment(Qt.AlignCenter)
+        label_encoding.setGeometry(0, 180, 720, 30)
+        label_encoding.hide()
+
+        ecb_radio = QRadioButton("ECB", self)
+        cbc_radio = QRadioButton("CBC", self)
+        ecb_radio.setFont(QFont('Tahoma', 15))
+        cbc_radio.setFont(QFont('Tahoma', 15))
+        ecb_radio.setGeometry(320, 210, 70, 30)
+        cbc_radio.setGeometry(320, 240, 70, 30)
+        ecb_radio.setChecked(True)
+
+        radios = [ecb_radio, cbc_radio]
+        for option in radios:
+            option.hide()
+
+        confirm_message_button = QPushButton("Send message", self)
+        confirm_message_button.setGeometry(200, 290, 320, 60)
+        confirm_message_button.setStyleSheet(button_style)
+        confirm_message_button.hide()
+
+        back_button = QPushButton("Back", self)
+        back_button.setGeometry(200, 390, 320, 60)
+        back_button.setStyleSheet(button_style)
+        back_button.hide()
+
         # TODO:
         #  Create pages for file exchange and for message exchange:
-        #  - add field for message content, radio buttons for encoding
-        #  - add radio fields for encoding type
-        #  - add send buttons
-        #  - add file browsing
+        #  - add field for message content, radio buttons for encoding DONE
+        #  - add radio fields for encoding type DONE
+        #  - add send buttons DONE
+        #  - add file browsing LATER
 
         # Button press handlers
-        def test_button_pressed():
+        def show_user_logged_in_gui():
             # hide all visible widgets and unhide all widgets for the message selection
             label.hide()
             key_field.hide()
-            test_button.hide()
-            login_button.hide()
+            create_room_button.hide()
+            connect_to_room_button.hide()
+
+            label_message.hide()
+            message_field.hide()
+            label_encoding.hide()
+            for opt in radios:
+                opt.hide()
+
+            confirm_message_button.hide()
+            back_button.hide()
 
             send_message_button.show()
             send_file_button.show()
@@ -81,37 +137,119 @@ class AppWindow(QWidget):
 
             pass
 
-        def login_button_pressed():
-            # TODO: Add login functionality
-            pass
-
-        def logout_button_pressed():
+        def show_login_gui():
             # hide all visible widgets and unhide all widgets for the login screen
             label.show()
             key_field.show()
-            test_button.show()
-            login_button.show()
+            create_room_button.show()
+            connect_to_room_button.show()
 
             send_message_button.hide()
             send_file_button.hide()
             logout_button.hide()
 
-            pass
+        def show_send_message_gui():
+            send_message_button.hide()
+            send_file_button.hide()
+            logout_button.hide()
 
-        def send_message_button_pressed():
-            # TODO: Add message sending functionality
-            pass
+            label_message.show()
+            message_field.show()
+            label_encoding.show()
+            for opt in radios:
+                opt.show()
 
-        def send_file_button_pressed():
+            confirm_message_button.show()
+            back_button.show()
+
+        def show_send_file_gui():
             # TODO: Add file sending functionality
             pass
 
+        def login_button_pressed():
+            ip = key_field.text()
+
+            if is_valid_ip(ip):
+                self.connect_to_room(ip)
+                show_user_logged_in_gui()
+            else:
+                dlg = CustomDialog()
+                dlg.set_message("The specified ip is invalid.")
+                dlg.exec()
+
+        def confirm_message_pressed():
+
+            message_content = message_field.text()
+            encoding = "ECB" if ecb_radio.isChecked() else "CBC"
+
+            if message_content == "":
+                dlg = CustomDialog()
+                dlg.set_message("Cannot send empty message.")
+                dlg.exec()
+            else:
+                # TODO add receiver ip here
+                dlg = CustomDialog(dialog_type="yes_no")
+                dlg.set_message("Encoding: " + encoding + "\tReceiver: ")
+                dlg.set_title("Send message?")
+
+
+                if dlg.exec():
+                    # TODO add receiver ip here
+                    self.send_message("ip", message_content, encoding)
+                    show_user_logged_in_gui()
+                else:
+                    pass
+
+        def connect_to_room_button_pressed():
+            ip = key_field.text()
+
+            if is_valid_ip(ip):
+                if self.connect_to_room(ip):
+                    show_user_logged_in_gui()
+                else:
+                    dlg = CustomDialog()
+                    dlg.set_message("Error connecting to room!")
+                    dlg.exec()
+
+            else:
+                dlg = CustomDialog()
+                dlg.set_message("The specified ip is invalid.")
+                dlg.exec()
+
+        def create_room_button_pressed():
+            # TODO add receiver ip here
+            self.create_room()
+            show_user_logged_in_gui()
+
+
         # Connect the button press handlers to the buttons
-        test_button.clicked.connect(test_button_pressed)
-        login_button.clicked.connect(login_button_pressed)
-        logout_button.clicked.connect(logout_button_pressed)
-        send_message_button.clicked.connect(send_message_button_pressed)
-        send_file_button.clicked.connect(send_file_button_pressed)
+        create_room_button.clicked.connect(create_room_button_pressed)
+        connect_to_room_button.clicked.connect(connect_to_room_button_pressed)
+        logout_button.clicked.connect(show_login_gui)
+        send_message_button.clicked.connect(show_send_message_gui)
+        send_file_button.clicked.connect(show_send_file_gui)
+        back_button.clicked.connect(show_user_logged_in_gui)
+        confirm_message_button.clicked.connect(confirm_message_pressed)
+
+
+    def create_room(self):
+        # Put room creation functionality here
+        # Best approach IMO is defining all net related functionality in a separate class
+        # Own Ip should be stored
+        print("Created new room!")
+        pass
+
+    def connect_to_room(self, ip):
+        # Connect to existing room here
+        print("Connecting to " + ip + "...")
+
+        # TODO return true if succesful
+        return True
+
+    def send_message(self, ip, content, encoding):
+        # Send message here
+        print("we sending messages :D")
+        pass
 
 
 if __name__ == "__main__":
@@ -119,6 +257,5 @@ if __name__ == "__main__":
     app.setStyle('Fusion')
 
     window = AppWindow()
-
     window.show()
     app.exec_()
