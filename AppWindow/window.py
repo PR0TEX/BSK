@@ -3,11 +3,14 @@ from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtCore import Qt
 
 from AppWindow.dialogs import CustomDialog
-from utils import is_valid_ip
-import dialogs
+from utils import is_valid_ip, get_own_ip
+
+import Chat.client as client
 
 class AppWindow(QMainWindow):
     def __init__(self):
+        self.own_ip = get_own_ip()
+        self.partner_ip = ""
         super().__init__()
         self.setWindowTitle("SCS Project - Encrypted Data Transmission")
         # self.setWindowIcon(QIcon("path/to/favicon.png"))
@@ -139,6 +142,8 @@ class AppWindow(QMainWindow):
 
         def show_login_gui():
             # hide all visible widgets and unhide all widgets for the login screen
+            # remove partner's ip address
+            self.partner_ip = ""
             label.show()
             key_field.show()
             create_room_button.show()
@@ -166,18 +171,13 @@ class AppWindow(QMainWindow):
             # TODO: Add file sending functionality
             pass
 
-        def login_button_pressed():
-            ip = key_field.text()
-
-            if is_valid_ip(ip):
-                self.connect_to_room(ip)
-                show_user_logged_in_gui()
-            else:
-                dlg = CustomDialog()
-                dlg.set_message("The specified ip is invalid.")
-                dlg.exec()
-
         def confirm_message_pressed():
+            if self.partner_ip == "":
+                dlg = CustomDialog()
+                dlg.set_title("No recipient set")
+                dlg.set_message("Currently not connected to anybody.")
+                dlg.exec()
+                return
 
             message_content = message_field.text()
             encoding = "ECB" if ecb_radio.isChecked() else "CBC"
@@ -187,15 +187,12 @@ class AppWindow(QMainWindow):
                 dlg.set_message("Cannot send empty message.")
                 dlg.exec()
             else:
-                # TODO add receiver ip here
                 dlg = CustomDialog(dialog_type="yes_no")
-                dlg.set_message("Encoding: " + encoding + "\tReceiver: ")
+                dlg.set_message("Encoding: " + encoding + "\tReceiver: " + self.partner_ip)
                 dlg.set_title("Send message?")
 
-
                 if dlg.exec():
-                    # TODO add receiver ip here
-                    self.send_message("ip", message_content, encoding)
+                    self.send_message(self.partner_ip, message_content, encoding)
                     show_user_logged_in_gui()
                 else:
                     pass
@@ -205,6 +202,7 @@ class AppWindow(QMainWindow):
 
             if is_valid_ip(ip):
                 if self.connect_to_room(ip):
+                    self.partner_ip = ip
                     show_user_logged_in_gui()
                 else:
                     dlg = CustomDialog()
@@ -217,7 +215,6 @@ class AppWindow(QMainWindow):
                 dlg.exec()
 
         def create_room_button_pressed():
-            # TODO add receiver ip here
             self.create_room()
             show_user_logged_in_gui()
 
@@ -235,21 +232,31 @@ class AppWindow(QMainWindow):
     def create_room(self):
         # Put room creation functionality here
         # Best approach IMO is defining all net related functionality in a separate class
-        # Own Ip should be stored
+
+        client.create_room_udp(self.own_ip, 2222)
+
         print("Created new room!")
+        self.partner_ip = ""
         pass
 
     def connect_to_room(self, ip):
         # Connect to existing room here
         print("Connecting to " + ip + "...")
 
-        # TODO return true if succesful
+        # TODO return true if successful
+        self.partner_ip = ip
         return True
 
     def send_message(self, ip, content, encoding):
         # Send message here
         print("we sending messages :D")
         pass
+
+    def message_received(self):
+        dlg = CustomDialog()
+        dlg.set_title("Yay!")
+        dlg.set_message("Message received!")
+        dlg.exec()
 
 
 if __name__ == "__main__":
@@ -258,4 +265,5 @@ if __name__ == "__main__":
 
     window = AppWindow()
     window.show()
+
     app.exec_()
