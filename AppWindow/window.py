@@ -337,6 +337,9 @@ class AppWindow(QMainWindow):
         self.my_socket.connect((ip, 2222))
         self.partner_ip = ip
 
+        thread = Thread(target=listen_for_messages, args=([self.my_socket, self]))
+        thread.start()
+
         return True
 
     def send_message(self, ip, content, encoding):
@@ -366,7 +369,7 @@ class AppWindow(QMainWindow):
 def listen_for_messages(listening_socket: socket.socket, window: AppWindow):
 
     # Bind the socket to a specific host and port
-    host = ''  # Listen on all available network interfaces
+    host = window.own_ip  # Listen on all available network interfaces
     port = 2222
     listening_socket.bind((host, port))
 
@@ -380,6 +383,7 @@ def listen_for_messages(listening_socket: socket.socket, window: AppWindow):
         print(f"Received connection from {client_address}")
 
         window.partner_ip = client_address[0]
+
 
         # Receive and print incoming messages
         while True:
