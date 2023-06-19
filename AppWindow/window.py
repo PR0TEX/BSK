@@ -1,14 +1,22 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QLineEdit, QPushButton, QRadioButton, QDialog
+import socket
+
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QLineEdit, QPushButton, QRadioButton, QDialog, \
+    QFileDialog
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtCore import Qt
+
+from time import sleep
+from threading import Thread
 
 from AppWindow.dialogs import CustomDialog
 from utils import is_valid_ip, get_own_ip
 
-import Chat.client as client
 
 class AppWindow(QMainWindow):
     def __init__(self):
+        # each app should have a socket bound to it. It will be used in threads to listen for incoming messages.
+        self.thread = Thread()
+        self.my_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.own_ip = get_own_ip()
         self.partner_ip = ""
         super().__init__()
@@ -58,7 +66,7 @@ class AppWindow(QMainWindow):
         send_message_button.setStyleSheet(button_style)
         send_message_button.hide()
 
-        send_file_button = QPushButton("Send File - not implemented", self)
+        send_file_button = QPushButton("Send File", self)
         send_file_button.setGeometry(200, 140, 320, 60)
         send_file_button.setStyleSheet(button_style)
         send_file_button.hide()
@@ -67,6 +75,27 @@ class AppWindow(QMainWindow):
         logout_button.setGeometry(200, 240, 320, 60)
         logout_button.setStyleSheet(button_style)
         logout_button.hide()
+
+        # Sending file GUI
+        select_file_button = QPushButton("Select file", self)
+        select_file_button.setGeometry(200, 60, 320, 60)
+        select_file_button.setStyleSheet(button_style)
+        select_file_button.hide()
+
+        select_file_prompt = QFileDialog(self)
+        select_file_prompt.setStyleSheet("background-color: #ffffff")
+        select_file_prompt.hide()
+
+        message_field = QLineEdit(self)
+        message_field.setGeometry(140, 110, 440, 50)  # set the position and size of the key_field widget
+        message_field.setStyleSheet(
+            "background-color: #ffffff; color: #2c2f33; border-radius: 10px; font-family: Arial; font-size: 16px;")
+        message_field.hide()
+
+        confirm_file_button = QPushButton("Send file", self)
+        confirm_file_button.setGeometry(200, 290, 320, 60)
+        confirm_file_button.setStyleSheet(button_style)
+        confirm_file_button.hide()
 
         # Sending message GUI
         label_message = QLabel(self)
@@ -78,7 +107,7 @@ class AppWindow(QMainWindow):
 
         message_field = QLineEdit(self)
         message_field.setGeometry(140, 110, 440, 50)  # set the position and size of the key_field widget
-        message_field.setStyleSheet("background-color: #ffffff; color: #2c2f33; border-radius: 10px; font-family: Arial; font-size: 16px;")
+        message_field.setStyleSheet("background-color: #ffffff; color: #2c2f33; border-radius: 10px; font-family: Arial; font-size: 12px;")
         message_field.hide()
 
         label_encoding = QLabel(self)
@@ -133,6 +162,8 @@ class AppWindow(QMainWindow):
 
             confirm_message_button.hide()
             back_button.hide()
+            select_file_button.hide()
+            confirm_file_button.hide()
 
             send_message_button.show()
             send_file_button.show()
@@ -143,7 +174,7 @@ class AppWindow(QMainWindow):
         def show_login_gui():
             # hide all visible widgets and unhide all widgets for the login screen
             # remove partner's ip address
-            self.partner_ip = ""
+            #self.partner_ip = ""
             label.show()
             key_field.show()
             create_room_button.show()
@@ -154,11 +185,19 @@ class AppWindow(QMainWindow):
             logout_button.hide()
 
         def show_send_message_gui():
+            if self.partner_ip == "":
+                dlg = CustomDialog()
+                dlg.set_title("No recipient set")
+                dlg.set_message("Currently not connected to anybody.")
+                dlg.exec()
+                return
             send_message_button.hide()
             send_file_button.hide()
             logout_button.hide()
 
             label_message.show()
+            message_field.setReadOnly(False)
+            message_field.setText("")
             message_field.show()
             label_encoding.show()
             for opt in radios:
@@ -168,8 +207,32 @@ class AppWindow(QMainWindow):
             back_button.show()
 
         def show_send_file_gui():
-            # TODO: Add file sending functionality
-            pass
+            if self.partner_ip == "":
+                dlg = CustomDialog()
+                dlg.set_title("No recipient set")
+                dlg.set_message("Currently not connected to anybody.")
+                dlg.exec()
+                return
+            send_message_button.hide()
+            send_file_button.hide()
+            logout_button.hide()
+
+            select_file_button.show()
+            message_field.setReadOnly(True)
+            message_field.setText("")
+            message_field.show()
+            label_encoding.show()
+            for opt in radios:
+                opt.show()
+
+            confirm_file_button.show()
+            back_button.show()
+
+        def show_file_selection_prompt():
+            if select_file_prompt.exec():
+                fname = select_file_prompt.selectedFiles()[0]
+                print(fname)
+                message_field.setText(fname)
 
         def confirm_message_pressed():
             if self.partner_ip == "":
@@ -197,7 +260,34 @@ class AppWindow(QMainWindow):
                 else:
                     pass
 
+        def confirm_file_pressed():
+            if self.partner_ip == "":
+                dlg = CustomDialog()
+                dlg.set_title("No recipient set")
+                dlg.set_message("Currently not connected to anybody.")
+                dlg.exec()
+                return
+
+            message_content = message_field.text()
+            encoding = "ECB" if ecb_radio.isChecked() else "CBC"
+
+            if message_content == "":
+                dlg = CustomDialog()
+                dlg.set_message("You need to select a file first.")
+                dlg.exec()
+            else:
+                dlg = CustomDialog(dialog_type="yes_no")
+                dlg.set_message("Encoding: " + encoding + "\tReceiver: " + self.partner_ip)
+                dlg.set_title("Send file?")
+
+                if dlg.exec():
+                    self.send_message(self.partner_ip, message_content, encoding)
+                    show_user_logged_in_gui()
+                else:
+                    pass
+
         def connect_to_room_button_pressed():
+
             ip = key_field.text()
 
             if is_valid_ip(ip):
@@ -227,29 +317,39 @@ class AppWindow(QMainWindow):
         send_file_button.clicked.connect(show_send_file_gui)
         back_button.clicked.connect(show_user_logged_in_gui)
         confirm_message_button.clicked.connect(confirm_message_pressed)
-
+        select_file_button.clicked.connect(show_file_selection_prompt)
+        confirm_file_button.clicked.connect(confirm_file_pressed)
 
     def create_room(self):
         # Put room creation functionality here
         # Best approach IMO is defining all net related functionality in a separate class
-
-        client.create_room_udp(self.own_ip, 2222)
+        thread = Thread(target=listen_for_messages, args=([self.my_socket, self]))
+        thread.start()
 
         print("Created new room!")
-        self.partner_ip = ""
+        #self.partner_ip = ""
         pass
 
     def connect_to_room(self, ip):
         # Connect to existing room here
         print("Connecting to " + ip + "...")
 
-        # TODO return true if successful
+        self.my_socket.connect((ip, 2222))
         self.partner_ip = ip
+
         return True
 
     def send_message(self, ip, content, encoding):
         # Send message here
-        print("we sending messages :D")
+        port = 2222
+
+        try:
+            # Send the message
+            self.my_socket.sendall(content.encode())
+            print("Message sent successfully.")
+
+        except ConnectionRefusedError:
+            print("Connection refused. Make sure the server is running.")
         pass
 
     def message_received(self):
@@ -257,6 +357,55 @@ class AppWindow(QMainWindow):
         dlg.set_title("Yay!")
         dlg.set_message("Message received!")
         dlg.exec()
+
+    def send_file(self, ip, file, encoding):
+        print("sending file...")
+        pass
+
+
+def listen_for_messages(listening_socket: socket.socket, window: AppWindow):
+
+    # Bind the socket to a specific host and port
+    host = ''  # Listen on all available network interfaces
+    port = 2222
+    listening_socket.bind((host, port))
+
+    # Listen for incoming connections
+    listening_socket.listen(1)
+    print(f"Listening for incoming messages on port {port}...")
+
+    while True:
+        # Accept a client connection
+        client_socket, client_address = listening_socket.accept()
+        print(f"Received connection from {client_address}")
+
+        window.partner_ip = client_address[0]
+
+        # Receive and print incoming messages
+        while True:
+            data = client_socket.recv(1024)
+            if not data:
+                # Connection closed by the client
+                break
+            message = data.decode()
+            print(f"Received message: {message}")
+
+            # Process the received message and send a response if needed
+
+        # Close the client socket
+        client_socket.close()
+
+    # Close the server socket
+    listening_socket.close()
+
+
+def thread_fun(message):
+    dlg = CustomDialog()
+    dlg.set_title("Thread test")
+    dlg.set_message(message)
+    sleep(3)
+    dlg.exec()
+    pass
 
 
 if __name__ == "__main__":
@@ -266,4 +415,4 @@ if __name__ == "__main__":
     window = AppWindow()
     window.show()
 
-    app.exec_()
+    app.exec()

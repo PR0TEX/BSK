@@ -28,3 +28,4 @@ class CustomDialog(QDialog):
 
     def set_title(self, title):
         self.setWindowTitle(title)
+
