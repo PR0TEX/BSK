@@ -469,11 +469,12 @@ def receive_file(client_socket):
     sleep(1)
     while not done:
         data = client_socket.recv(1024)
-        if file_name[-5:] == b"<END>":
+        if data == b"<END>":
             done = True
         else:
             file_bytes += data
 
+    print("done")
     file.write(file_bytes)
     file.close()
 
