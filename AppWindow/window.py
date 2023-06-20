@@ -404,9 +404,9 @@ class AppWindow(QMainWindow):
         self.encoding_mode = encoding
         self.sess_key = os.urandom(16)
 
-        self.send_message(self.sess_key, "none")
+        self.my_socket.send(self.sess_key)
         print("Sending session key:", self.sess_key)
-        self.send_message(self.encoding_mode, "none")
+        self.my_socket.send(self.encoding_mode)
         print("Sending encoding mode:", self.encoding_mode)
 
         receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
