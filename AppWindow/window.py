@@ -438,9 +438,11 @@ class AppWindow(QMainWindow):
     def send_file(self, file):
 
         print("sending file...")
-        file_name = file
+        file_name = file.split("/")[-1]
         file = open(file_name, "rb")
         file_size = os.path.getsize(file_name)
+
+
 
         # received file name
         self.my_socket.send("newfile.txt".encode("utf-8"))
@@ -462,7 +464,10 @@ def receive_file(client_socket):
     file_size = client_socket.recv(1024).decode("utf-8")
     print(file_size)
 
-    file = open(file_name, "wb")
+    if not os.path.exists("downloads"):
+        os.makedirs("downloads")
+
+    file = open(os.path.join("downloads", file_name), "wb")
     file_bytes = b""
 
     done = False
