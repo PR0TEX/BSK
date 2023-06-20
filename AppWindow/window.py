@@ -380,7 +380,7 @@ class AppWindow(QMainWindow):
             self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
 
             #receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
-            receive_thread = Thread(target=receive_file(), args=(client_socket,))
+            receive_thread = Thread(target=receive_file, args=(client_socket,))
             receive_thread.start()
 
             self.my_socket = client_socket
@@ -415,7 +415,7 @@ class AppWindow(QMainWindow):
         self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
 
         #receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
-        receive_thread = Thread(target=receive_file(), args=(client_socket,))
+        receive_thread = Thread(target=receive_file, args=(client_socket,))
         receive_thread.start()
 
 
@@ -441,7 +441,7 @@ class AppWindow(QMainWindow):
         file_size = os.path.getsize(file_name)
 
         # received file name
-        self.my_socket.send("received file".encode("utf-8"))
+        self.my_socket.send("newfile.txt".encode("utf-8"))
         # received file size
         self.my_socket.send(str(file_size).encode("utf-8"))
 
