@@ -322,7 +322,7 @@ class AppWindow(QMainWindow):
                 dlg.set_title("Send file?")
 
                 if dlg.exec():
-                    self.send_message(self.partner_ip, message_content, encoding)
+                    self.send_file(file=message_content)
                     show_user_logged_in_gui()
                 else:
                     pass
@@ -379,7 +379,8 @@ class AppWindow(QMainWindow):
 
             self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
 
-            receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
+            #receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
+            receive_thread = Thread(target=receive_file(), args=(client_socket,))
             receive_thread.start()
 
             self.my_socket = client_socket
@@ -413,7 +414,8 @@ class AppWindow(QMainWindow):
 
         self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
 
-        receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
+        #receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
+        receive_thread = Thread(target=receive_file(), args=(client_socket,))
         receive_thread.start()
 
 
@@ -431,10 +433,45 @@ class AppWindow(QMainWindow):
             print('An error occurred while sending message.')
             self.my_socket.close()
 
-    def send_file(self, ip, file, encoding):
-        # TODO
+    def send_file(self, file):
+
         print("sending file...")
-        pass
+        file_name = file
+        file = open(file_name, "rb")
+        file_size = os.path.getsize(file_name)
+
+        # received file name
+        self.my_socket.send("received file".encode("utf-8"))
+        # received file size
+        self.my_socket.send(str(file_size).encode("utf-8"))
+
+        data = file.read()
+        self.my_socket.sendall(data)
+        self.my_socket.send(b"<END>")
+
+        file.close()
+
+
+def receive_file(client_socket):
+    file_name = client_socket.recv(1024).decode("utf-8")
+    print(file_name)
+    file_size = client_socket.recv(1024).decode("utf-8")
+    print(file_size)
+
+    file = open(file_name, "wb")
+    file_bytes = b""
+
+    done = False
+
+    while not done:
+        data = client_socket.recv(1024)
+        if file_name[-5:] == b"<END>":
+            done = True
+        else:
+            file_bytes += data
+
+    file.write(file_bytes)
+    file.close()
 
 
 def receive_messages(client_socket, window: AppWindow):
