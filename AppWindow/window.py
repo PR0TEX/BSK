@@ -374,7 +374,7 @@ class AppWindow(QMainWindow):
 
             self.sess_key = client_socket.recv(1024)
             print("Received session key:", self.sess_key)
-            self.encoding_mode = client_socket.recv(1024)
+            self.encoding_mode = client_socket.recv(1024).decode('utf-8')
             print("Received encoding mode:", self.encoding_mode)
 
             receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
@@ -406,7 +406,7 @@ class AppWindow(QMainWindow):
 
         self.my_socket.sendall(self.sess_key)
         print("Sending session key:", self.sess_key)
-        self.my_socket.sendall(self.encoding_mode)
+        self.my_socket.sendall(self.encoding_mode.encode('utf-8'))
         print("Sending encoding mode:", self.encoding_mode)
 
         receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
