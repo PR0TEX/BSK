@@ -19,6 +19,8 @@ from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad, unpad
 
+from time import sleep
+
 class AESCipher:
     def __init__(self, key, mode):
         self.key = md5(key.encode('utf8')).digest()
@@ -441,11 +443,12 @@ class AppWindow(QMainWindow):
         file_size = os.path.getsize(file_name)
 
         # received file name
-        self.my_socket.sendall("newfile.txt".encode("utf-8"))
+        self.my_socket.send("newfile.txt".encode("utf-8"))
         # received file size
-        self.my_socket.sendall(str(file_size).encode("utf-8"))
+        self.my_socket.send(str(file_size).encode("utf-8"))
 
         data = file.read()
+        sleep(0.1)
         self.my_socket.sendall(data)
         self.my_socket.send(b"<END>")
 
