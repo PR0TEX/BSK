@@ -445,7 +445,7 @@ class AppWindow(QMainWindow):
 
 
         # received file name
-        self.my_socket.send("newfile.txt".encode("utf-8"))
+        self.my_socket.send(file_name.encode("utf-8"))
         # received file size
         self.my_socket.send(str(file_size).encode("utf-8"))
 
