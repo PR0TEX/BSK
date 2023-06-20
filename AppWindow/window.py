@@ -31,7 +31,7 @@ class AESCipher:
             cipher_data = b64encode(iv + self.cipher.encrypt(pad(data.encode('utf-8'),
             AES.block_size)))
         elif self.mode == "ECB":
-            data = pad(data.encode(), 16)
+            data = pad(data.encode(), AES.block_size)
             cipher = AES.new(self.key, AES.MODE_ECB)
             cipher_data = base64.b64encode(cipher.encrypt(data))
 
@@ -45,7 +45,7 @@ class AESCipher:
         elif self.mode == "ECB":
             raw = base64.b64decode(data)
             cipher = AES.new(self.key, AES.MODE_ECB)
-            decrypted_data = unpad(cipher.decrypt(raw),16)
+            decrypted_data = unpad(cipher.decrypt(raw), AES.block_size)
 
         return decrypted_data
 
@@ -55,7 +55,7 @@ class AppWindow(QMainWindow):
         self.my_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.own_ip = get_own_ip()
         self.partner_ip = ""
-        self.encryptor = AESCipher("secretkey", "CBC")
+        self.encryptor = AESCipher("secretkey", "ECB")
         super().__init__()
         self.setWindowTitle("SCS Project - Encrypted Data Transmission")
         # self.setWindowIcon(QIcon("path/to/favicon.png"))
@@ -422,7 +422,7 @@ class AppWindow(QMainWindow):
             # ECB
             # Generate a random key (16 bytes) for demonstration purposes
 
-            self.my_socket.send(AESCipher("secretkey").encrypt(content))
+            self.my_socket.send(AESCipher("secretkey", "ECB").encrypt(content))
 
         except:
             print('An error occurred while sending message.')
@@ -444,7 +444,7 @@ def receive_messages(client_socket):
 
             # message = decrypt_cbc(key, ciphertext).decode('utf-8')
             # ECB
-            message = AESCipher("secretkey").decrypt(ciphertext)
+            message = AESCipher("secretkey", "ECB").decrypt(ciphertext)
 
             print(message)
         except:
