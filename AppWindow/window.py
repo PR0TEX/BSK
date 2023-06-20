@@ -447,8 +447,8 @@ class AppWindow(QMainWindow):
         # received file size
         self.my_socket.send(str(file_size).encode("utf-8"))
 
+        sleep(1)
         data = file.read()
-        sleep(0.1)
         self.my_socket.sendall(data)
         self.my_socket.send(b"<END>")
 
@@ -465,7 +465,7 @@ def receive_file(client_socket):
     file_bytes = b""
 
     done = False
-
+    sleep(1)
     while not done:
         data = client_socket.recv(1024)
         if file_name[-5:] == b"<END>":
