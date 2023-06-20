@@ -58,9 +58,9 @@ class AppWindow(QMainWindow):
         self.my_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.own_ip = get_own_ip()
         self.partner_ip = ""
-        self.encryptor = None
         self.encoding_mode = "None"
         self.sess_key = ""
+        self.encryptor = AESCipher(self.sess_key, self.encoding_mode)
         super().__init__()
         self.setWindowTitle("SCS Project - Encrypted Data Transmission")
         # self.setWindowIcon(QIcon("path/to/favicon.png"))
@@ -377,7 +377,7 @@ class AppWindow(QMainWindow):
             self.encoding_mode = client_socket.recv(1024)
             print("Received encoding mode:", self.encoding_mode)
 
-            receive_thread = Thread(target=receive_messages, args=(client_socket,))
+            receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
             receive_thread.start()
 
             self.my_socket = client_socket
@@ -409,10 +409,10 @@ class AppWindow(QMainWindow):
         self.send_message(self.encoding_mode, "none")
         print("Sending encoding mode:", self.encoding_mode)
 
-        receive_thread = Thread(target=receive_messages, args=(client_socket,))
+        receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
         receive_thread.start()
 
-        self.encryptor = AESCipher(self.sess_key, self.encoding_mode)
+        self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
 
     def send_message(self, content, encoding):
         # Send message here
@@ -421,7 +421,7 @@ class AppWindow(QMainWindow):
             # ECB
             # Generate a random key (16 bytes) for demonstration purposes
 
-            self.my_socket.send(AESCipher("secretkey", "ECB").encrypt(content))
+            self.my_socket.send(self.encryptor.encrypt(content))
 
         except:
             print('An error occurred while sending message.')
@@ -433,7 +433,7 @@ class AppWindow(QMainWindow):
         pass
 
 
-def receive_messages(client_socket):
+def receive_messages(client_socket, window: AppWindow):
     while True:
         try:
             # CBC
@@ -442,7 +442,7 @@ def receive_messages(client_socket):
 
             # message = decrypt_cbc(key, ciphertext).decode('utf-8')
             # ECB
-            message = AESCipher("secretkey", "ECB").decrypt(ciphertext)
+            message = window.encryptor.decrypt(ciphertext)
 
             print(message)
         except:
