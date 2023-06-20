@@ -1,6 +1,6 @@
 import socket
 import base64
-
+import os
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QLineEdit, QPushButton, QRadioButton, QDialog, \
     QFileDialog
 from PyQt5.QtGui import QIcon, QFont
@@ -34,6 +34,8 @@ class AESCipher:
             data = pad(data.encode(), AES.block_size)
             cipher = AES.new(self.key, AES.MODE_ECB)
             cipher_data = base64.b64encode(cipher.encrypt(data))
+        else:
+            return data
 
         return cipher_data
 
@@ -46,7 +48,8 @@ class AESCipher:
             raw = base64.b64decode(data)
             cipher = AES.new(self.key, AES.MODE_ECB)
             decrypted_data = unpad(cipher.decrypt(raw), AES.block_size)
-
+        else:
+            return data
         return decrypted_data
 
 class AppWindow(QMainWindow):
@@ -55,7 +58,9 @@ class AppWindow(QMainWindow):
         self.my_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.own_ip = get_own_ip()
         self.partner_ip = ""
-        self.encryptor = AESCipher("secretkey", "ECB")
+        self.encryptor = None
+        self.encoding_mode = "None"
+        self.sess_key = ""
         super().__init__()
         self.setWindowTitle("SCS Project - Encrypted Data Transmission")
         # self.setWindowIcon(QIcon("path/to/favicon.png"))
@@ -341,7 +346,7 @@ class AppWindow(QMainWindow):
                 dlg.exec()
 
         def create_room_button_pressed():
-            self.create_room()
+            self.create_room(encoding = "ECB" if ecb_radio.isChecked() else "CBC")
             show_user_logged_in_gui()
 
 
@@ -356,24 +361,6 @@ class AppWindow(QMainWindow):
         select_file_button.clicked.connect(show_file_selection_prompt)
         confirm_file_button.clicked.connect(confirm_file_pressed)
 
-    # def create_room(self):
-    #     # Put room creation functionality here
-    #     # Best approach IMO is defining all net related functionality in a separate class
-    #     thread = Thread(target=listen_for_messages, args=([self.my_socket, self]))
-    #     thread.start()
-    #
-    #     print("Created new room!")
-    #     #self.partner_ip = ""
-    #     pass
-    #
-    # def connect_to_room(self, ip):
-    #     # Connect to existing room here
-    #     print("Connecting to " + ip + "...")
-    #
-    #     self.my_socket.connect((ip, 2222))
-    #     self.partner_ip = ip
-    #
-    #     return True
 
     def connect_to_room(self, ip):
         host = ip # Replace with the server's IP address
@@ -385,6 +372,11 @@ class AppWindow(QMainWindow):
             print('Connected to the server.')
             self.partner_ip = ip
 
+            self.sess_key = client_socket.recv(1024)
+            print("Received session key:", self.sess_key)
+            self.encoding_mode = client_socket.recv(1024)
+            print("Received encoding mode:", self.encoding_mode)
+
             receive_thread = Thread(target=receive_messages, args=(client_socket,))
             receive_thread.start()
 
@@ -395,7 +387,7 @@ class AppWindow(QMainWindow):
 
         return True
 
-    def create_room(self):
+    def create_room(self, encoding):
         host = ''
         port = 12345
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -412,8 +404,15 @@ class AppWindow(QMainWindow):
         receive_thread.start()
 
         self.my_socket = client_socket
+        self.encoding_mode = encoding
+        self.sess_key = os.urandom(16)
 
+        self.send_message(self.sess_key, "none")
+        print("Sending session key:", self.sess_key)
+        self.send_message(self.encoding_mode, "none")
+        print("Sending encoding mode:", self.encoding_mode)
 
+        self.encryptor = AESCipher(self.sess_key, self.encoding_mode)
 
     def send_message(self, content, encoding):
         # Send message here
@@ -427,7 +426,6 @@ class AppWindow(QMainWindow):
         except:
             print('An error occurred while sending message.')
             self.my_socket.close()
-
 
     def send_file(self, ip, file, encoding):
         # TODO
@@ -451,43 +449,6 @@ def receive_messages(client_socket):
             print('An error occurred while receiving messages.')
             client_socket.close()
             break
-
-
-def listen_for_messages(listening_socket: socket.socket, window: AppWindow):
-
-    listening_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    # Bind the socket to a specific host and port
-    host = ''  # Listen on all available network interfaces
-    port = 2221
-    listening_socket.bind((host, port))
-
-    # Listen for incoming connections
-    listening_socket.listen(1)
-    print(f"Listening for incoming messages on {window.own_ip}:{port}...")
-
-    while True:
-        # Accept a client connection
-        client_socket, client_address = listening_socket.accept()
-        print(f"Received connection from {client_address}")
-
-        window.partner_ip = client_address[0]
-
-        # Receive and print incoming messages
-        while True:
-            data = client_socket.recv(1024)
-            if not data:
-                # Connection closed by the client
-                break
-            message = data.decode()
-            print(f"Received message: {message}")
-            # Process the received message and send a response if needed
-
-        # Close the client socket
-        client_socket.close()
-
-    # Close the server socket
-    listening_socket.close()
 
 
 if __name__ == "__main__":
