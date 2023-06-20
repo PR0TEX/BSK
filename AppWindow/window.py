@@ -1,3 +1,4 @@
+import os.path
 import socket
 import base64
 
@@ -430,10 +431,43 @@ class AppWindow(QMainWindow):
 
 
     def send_file(self, ip, file, encoding):
-        # TODO
-        print("sending file...")
-        pass
 
+        print("sending file...")
+        file_name = "mecz.txt"
+        file = open(file_name, "rb")
+        file_size = os.path.getsize(file_name)
+
+        # received file name
+        self.my_socket.send("received_mecz.txt".encode("utf-8"))
+        # received file size
+        self.my_socket.send(str(file_size).encode("utf-8"))
+
+        data = file.read()
+        self.my_socket.sendall(data)
+        self.my_socket.send(b"<END>")
+
+        file.close()
+
+def receive_file(client_socket):
+    file_name = client_socket.recv(1024).decode("utf-8")
+    print(file_name)
+    file_size = client_socket.recv(1024).decode("utf-8")
+    print(file_size)
+
+    file = open(file_name, "wb")
+    file_bytes = b""
+
+    done = False
+
+    while not done:
+        data = client_socket.recv(1024)
+        if file_name[-5:] == b"<END>":
+            done = True
+        else:
+            file_bytes += data
+
+    file.write(file_bytes)
+    file.close()
 
 def receive_messages(client_socket):
     while True:
