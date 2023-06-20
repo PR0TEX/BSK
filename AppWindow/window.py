@@ -15,7 +15,6 @@ from utils import is_valid_ip, get_own_ip
 class AppWindow(QMainWindow):
     def __init__(self):
         # each app should have a socket bound to it. It will be used in threads to listen for incoming messages.
-        self.thread = Thread()
         self.my_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.own_ip = get_own_ip()
         self.partner_ip = ""
@@ -255,7 +254,7 @@ class AppWindow(QMainWindow):
                 dlg.set_title("Send message?")
 
                 if dlg.exec():
-                    self.send_message(self.partner_ip, message_content, encoding)
+                    self.send_message(message_content, encoding)
                     show_user_logged_in_gui()
                 else:
                     pass
@@ -320,40 +319,70 @@ class AppWindow(QMainWindow):
         select_file_button.clicked.connect(show_file_selection_prompt)
         confirm_file_button.clicked.connect(confirm_file_pressed)
 
-    def create_room(self):
-        # Put room creation functionality here
-        # Best approach IMO is defining all net related functionality in a separate class
-        thread = Thread(target=listen_for_messages, args=([self.my_socket, self]))
-        thread.start()
-
-        print("Created new room!")
-        #self.partner_ip = ""
-        pass
+    # def create_room(self):
+    #     # Put room creation functionality here
+    #     # Best approach IMO is defining all net related functionality in a separate class
+    #     thread = Thread(target=listen_for_messages, args=([self.my_socket, self]))
+    #     thread.start()
+    #
+    #     print("Created new room!")
+    #     #self.partner_ip = ""
+    #     pass
+    #
+    # def connect_to_room(self, ip):
+    #     # Connect to existing room here
+    #     print("Connecting to " + ip + "...")
+    #
+    #     self.my_socket.connect((ip, 2222))
+    #     self.partner_ip = ip
+    #
+    #     return True
 
     def connect_to_room(self, ip):
-        # Connect to existing room here
-        print("Connecting to " + ip + "...")
+        host = ip # Replace with the server's IP address
+        port = 12345  # Replace with the desired port number
 
-        self.my_socket.connect((ip, 2222))
-        self.partner_ip = ip
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            client_socket.connect((host, port))
+            print('Connected to the server.')
+            self.partner_ip = ip
 
-        thread = Thread(target=listen_for_messages, args=([self.my_socket, self]))
-        thread.start()
+            receive_thread = Thread(target=receive_messages, args=(client_socket,))
+            receive_thread.start()
+
+            self.my_socket = client_socket
+        except ConnectionRefusedError:
+            print('Unable to connect to the server.')
+            return False
 
         return True
 
-    def send_message(self, ip, content, encoding):
+    def create_room(self):
+        host = ''
+        port = 12345
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.bind((host, port))
+        server_socket.listen(1)
+        print('Waiting for incoming connections...')
+
+        client_socket, client_address = server_socket.accept()
+        print('Connected to', client_address)
+
+        self.partner_ip = client_address[0]
+
+        receive_thread = Thread(target=receive_messages, args=(client_socket,))
+        receive_thread.start()
+
+        self.my_socket = client_socket
+
+    def send_message(self, content, encoding):
         # Send message here
-        port = 2222
-
         try:
-            # Send the message
-            self.my_socket.sendall(content.encode())
-            print("Message sent successfully.")
-
-        except ConnectionRefusedError:
-            print("Connection refused. Make sure the server is running.")
-        pass
+            self.my_socket.send(content.encode('utf-8'))
+        except:
+            print('An error occurred while sending message.')
+            self.my_socket.close()
 
     def message_received(self):
         dlg = CustomDialog()
@@ -362,20 +391,34 @@ class AppWindow(QMainWindow):
         dlg.exec()
 
     def send_file(self, ip, file, encoding):
+        # TODO
         print("sending file...")
         pass
 
 
+def receive_messages(client_socket):
+    while True:
+        try:
+            message = client_socket.recv(1024).decode('utf-8')
+            print(message)
+        except:
+            print('An error occurred while receiving messages.')
+            client_socket.close()
+            break
+
+
 def listen_for_messages(listening_socket: socket.socket, window: AppWindow):
 
+    listening_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
     # Bind the socket to a specific host and port
-    host = window.own_ip  # Listen on all available network interfaces
-    port = 2222
+    host = ''  # Listen on all available network interfaces
+    port = 2221
     listening_socket.bind((host, port))
 
     # Listen for incoming connections
     listening_socket.listen(1)
-    print(f"Listening for incoming messages on port {port}...")
+    print(f"Listening for incoming messages on {window.own_ip}:{port}...")
 
     while True:
         # Accept a client connection
@@ -383,7 +426,6 @@ def listen_for_messages(listening_socket: socket.socket, window: AppWindow):
         print(f"Received connection from {client_address}")
 
         window.partner_ip = client_address[0]
-
 
         # Receive and print incoming messages
         while True:
@@ -393,7 +435,6 @@ def listen_for_messages(listening_socket: socket.socket, window: AppWindow):
                 break
             message = data.decode()
             print(f"Received message: {message}")
-
             # Process the received message and send a response if needed
 
         # Close the client socket
@@ -401,15 +442,6 @@ def listen_for_messages(listening_socket: socket.socket, window: AppWindow):
 
     # Close the server socket
     listening_socket.close()
-
-
-def thread_fun(message):
-    dlg = CustomDialog()
-    dlg.set_title("Thread test")
-    dlg.set_message(message)
-    sleep(3)
-    dlg.exec()
-    pass
 
 
 if __name__ == "__main__":
