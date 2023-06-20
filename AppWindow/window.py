@@ -377,6 +377,8 @@ class AppWindow(QMainWindow):
             self.encoding_mode = client_socket.recv(1024).decode('utf-8')
             print("Received encoding mode:", self.encoding_mode)
 
+            self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
+
             receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
             receive_thread.start()
 
@@ -409,10 +411,12 @@ class AppWindow(QMainWindow):
         self.my_socket.sendall(self.encoding_mode.encode('utf-8'))
         print("Sending encoding mode:", self.encoding_mode)
 
+        self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
+
         receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
         receive_thread.start()
 
-        self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
+
 
     def send_message(self, content, encoding):
         # Send message here
