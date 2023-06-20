@@ -11,6 +11,9 @@ from threading import Thread
 from AppWindow.dialogs import CustomDialog
 from utils import is_valid_ip, get_own_ip
 
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
+from Crypto.Util.Padding import pad, unpad
 
 class AppWindow(QMainWindow):
     def __init__(self):
@@ -376,9 +379,33 @@ class AppWindow(QMainWindow):
 
         self.my_socket = client_socket
 
+
+    def encrypt_ecb(self, key, message):
+        cipher = AES.new(key, AES.MODE_ECB)
+        padded_message = pad(message, AES.block_size)
+        ciphertext = cipher.encrypt(padded_message)
+
+        return ciphertext
+
+    def encrypt_ecb(self, key, message):
+        iv = get_random_bytes(16)
+        cipher = AES.new(key, AES.MODE_CBC, iv)
+        padded_message = pad(message, AES.block_size)
+        ciphertext = cipher.encrypt(padded_message)
+
+        return ciphertext
+
+
     def send_message(self, content, encoding):
         # Send message here
         try:
+
+            # ECB
+            # Generate a random key (16 bytes) for demonstration purposes
+            key = b'mysecretencryptionkey'
+            self.my_socket.send(self.encrpt_ecb(key, content).encode('utf-8'))
+
+            # Normal plain text
             self.my_socket.send(content.encode('utf-8'))
         except:
             print('An error occurred while sending message.')
@@ -395,11 +422,34 @@ class AppWindow(QMainWindow):
         print("sending file...")
         pass
 
+def decrypt_cbc(key, ciphertext):
+    cipher = AES.new(key, AES.MODE_CBC, ciphertext[:AES.block_size])
+    decrypted_message = cipher.decrypt(ciphertext[AES.block_size:])
+    message = unpad(decrypted_message, AES.block_size)
+
+    return message
+
+def decrypt_ecb(key, ciphertext):
+    cipher = AES.new(key, AES.MODE_ECB, ciphertext[:AES.block_size])
+    decrypted_message = cipher.decrypt(ciphertext[AES.block_size:])
+    message = unpad(decrypted_message, AES.block_size)
+
+    return message
 
 def receive_messages(client_socket):
     while True:
         try:
-            message = client_socket.recv(1024).decode('utf-8')
+            # Probably the size of message is bigger in case of encrypted data
+            # message = client_socket.recv(1024).decode('utf-8')
+
+            # CBC
+            ciphertext = client_socket.recv(1024).decode('utf-8')
+            # Generate the same key used by the server
+            key = get_random_bytes(16)
+
+            # message = decrypt_cbc(key, ciphertext).decode('utf-8')
+            message = decrypt_ecb(key, ciphertext).decode('utf-8')
+
             print(message)
         except:
             print('An error occurred while receiving messages.')
