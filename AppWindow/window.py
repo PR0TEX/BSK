@@ -1,4 +1,5 @@
 import socket
+import base64
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QLineEdit, QPushButton, QRadioButton, QDialog, \
     QFileDialog
@@ -19,20 +20,34 @@ from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad, unpad
 
 class AESCipher:
-    def __init__(self, key):
+    def __init__(self, key, mode):
         self.key = md5(key.encode('utf8')).digest()
+        self.mode = mode
 
     def encrypt(self, data):
-        iv = get_random_bytes(AES.block_size)
-        self.cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        return b64encode(iv + self.cipher.encrypt(pad(data.encode('utf-8'),
+        if self.mode == "CBC":
+            iv = get_random_bytes(AES.block_size)
+            self.cipher = AES.new(self.key, AES.MODE_CBC, iv)
+            cipher_data = b64encode(iv + self.cipher.encrypt(pad(data.encode('utf-8'),
             AES.block_size)))
+        elif self.mode == "ECB":
+            data = pad(data.encode(), 16)
+            cipher = AES.new(self.key, AES.MODE_ECB)
+            cipher_data = base64.b64encode(cipher.encrypt(data))
+
+        return cipher_data
 
     def decrypt(self, data):
-        raw = b64decode(data)
-        self.cipher = AES.new(self.key, AES.MODE_CBC, raw[:AES.block_size])
-        return unpad(self.cipher.decrypt(raw[AES.block_size:]), AES.block_size)
+        if self.mode == "CBC":
+            raw = b64decode(data)
+            self.cipher = AES.new(self.key, AES.MODE_CBC, raw[:AES.block_size])
+            decrypted_data = unpad(self.cipher.decrypt(raw[AES.block_size:]), AES.block_size)
+        elif self.mode == "ECB":
+            raw = base64.b64decode(data)
+            cipher = AES.new(self.key, AES.MODE_ECB)
+            decrypted_data = unpad(cipher.decrypt(raw),16)
 
+        return decrypted_data
 
 class AppWindow(QMainWindow):
     def __init__(self):
@@ -40,7 +55,7 @@ class AppWindow(QMainWindow):
         self.my_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.own_ip = get_own_ip()
         self.partner_ip = ""
-        self.encryptor = AESCipher("secretkey")
+        self.encryptor = AESCipher("secretkey", "CBC")
         super().__init__()
         self.setWindowTitle("SCS Project - Encrypted Data Transmission")
         # self.setWindowIcon(QIcon("path/to/favicon.png"))
