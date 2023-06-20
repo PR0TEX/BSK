@@ -450,7 +450,8 @@ class AppWindow(QMainWindow):
         sleep(1)
         data = file.read()
         self.my_socket.sendall(data)
-        self.my_socket.send(b"<END>")
+        sleep(1)
+        self.my_socket.sendall(b"<END>")
 
         file.close()
 
