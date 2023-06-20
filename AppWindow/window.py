@@ -400,9 +400,6 @@ class AppWindow(QMainWindow):
 
         self.partner_ip = client_address[0]
 
-        receive_thread = Thread(target=receive_messages, args=(client_socket,))
-        receive_thread.start()
-
         self.my_socket = client_socket
         self.encoding_mode = encoding
         self.sess_key = os.urandom(16)
@@ -411,6 +408,9 @@ class AppWindow(QMainWindow):
         print("Sending session key:", self.sess_key)
         self.send_message(self.encoding_mode, "none")
         print("Sending encoding mode:", self.encoding_mode)
+
+        receive_thread = Thread(target=receive_messages, args=(client_socket,))
+        receive_thread.start()
 
         self.encryptor = AESCipher(self.sess_key, self.encoding_mode)
 
