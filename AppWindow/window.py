@@ -455,7 +455,7 @@ class AppWindow(QMainWindow):
 
             encrypted_sess_key = client_socket.recv(1024)
 
-            self.sess_key = self.rsa_keys.decrypt_rsa(encrypted_sess_key, self.rsa_keys.private_key).decode('utf-8')
+            self.sess_key = self.rsa_keys.decrypt_rsa(encrypted_sess_key, self.rsa_keys.private_key)
 
             # self.sess_key = client_socket.recv(1024)
             print("Received session key:", self.sess_key)
