@@ -62,8 +62,7 @@ class AESCipher:
         if self.mode == "CBC":
             iv = get_random_bytes(AES.block_size)
             self.cipher = AES.new(self.key, AES.MODE_CBC, iv)
-            cipher_data = b64encode(iv + self.cipher.encrypt(pad(data.encode('utf-8'),
-            AES.block_size)))
+            cipher_data = b64encode(iv + self.cipher.encrypt(pad(data.encode('utf-8'), AES.block_size)))
         elif self.mode == "ECB":
             data = pad(data.encode(), AES.block_size)
             cipher = AES.new(self.key, AES.MODE_ECB)
@@ -617,7 +616,7 @@ def receive_messages(listening_socket):
                         data = listening_socket.recv(2048)
                         data = window.encryptor.decrypt(data)
                         if data[-5:] == b"<END>":
-                            f.write(data[:-5])
+                            f.write(data[:-5].decode("utf-8"))
                             break
                         f.write(data.decode("utf-8"))
                         i += 1
