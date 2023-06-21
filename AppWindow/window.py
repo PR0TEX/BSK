@@ -438,24 +438,29 @@ class AppWindow(QMainWindow):
     def send_file(self, file):
 
         print("sending file...")
-        file_name = file.split("/")[-1]
+        file_name = file
         file = open(file_name, "rb")
         file_size = os.path.getsize(file_name)
 
-
-
-        # received file name
-        self.my_socket.send(file_name.encode("utf-8"))
-        # received file size
+        # send file name
+        self.my_socket.send("newfile.txt".encode("utf-8"))
+        # send file size
         self.my_socket.send(str(file_size).encode("utf-8"))
 
         sleep(1)
-        data = file.read()
-        self.my_socket.sendall(data)
-        sleep(1)
-        self.my_socket.sendall(b"<END>")
 
-        file.close()
+        with open(file_name, "rb") as f:
+            while True:
+                data = f.read()
+                if not data:
+                    break
+
+                self.my_socket.send(data.encode("utf-8"))
+                sleep(1)
+        # self.my_socket.sendall(b"<END>")
+
+        # file.close()
+#          self.my_socket() close?
 
 
 def receive_file(client_socket):
@@ -464,24 +469,29 @@ def receive_file(client_socket):
     file_size = client_socket.recv(1024).decode("utf-8")
     print(file_size)
 
-    if not os.path.exists("downloads"):
-        os.makedirs("downloads")
+    # file = open(file_name, "wb")
+    # file_bytes = b""
 
-    file = open(os.path.join("downloads", file_name), "wb")
-    file_bytes = b""
-
-    done = False
-    sleep(1)
-    while not done:
-        data = client_socket.recv(1024)
-        if data == b"<END>":
-            done = True
-        else:
-            file_bytes += data
+    with open(f"recv_{file_name}", "w") as f:
+        while True:
+            data = client_socket.recv(1024).decode("utf-8")
+            if not data:
+                break
+            f.write(data)
+            sleep(1)
+    # done = Falsex
+    #
+    # while not done:
+    #     data = client_socket.recv(1024)
+    #     if data == b"<END>":
+    #         done = True
+    #     else:
+    #         file_bytes += data
 
     print("done")
-    file.write(file_bytes)
-    file.close()
+
+    # file.write(file_bytes)
+    # file.close()
 
 
 def receive_messages(client_socket, window: AppWindow):
