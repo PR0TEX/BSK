@@ -560,7 +560,7 @@ class AppWindow(QMainWindow):
 
             print("will send", math.ceil(file_size / 1024), "packets")
             i = 0
-            with open(file_name, "rb") as f:
+            with open(file, "rb") as f:
                 while True:
                     data = f.read(1024)
                     if not data:
