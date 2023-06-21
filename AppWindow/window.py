@@ -1,3 +1,4 @@
+import math
 import socket
 import base64
 import os
@@ -449,17 +450,24 @@ class AppWindow(QMainWindow):
 
         sleep(1)
 
+        print("will send", math.ceil(file_size/1024), "packets")
+        i = 0
         with open(file_name, "rb") as f:
             while True:
-                data = f.read()
+                data = f.read(1024)
                 if not data:
                     self.my_socket.send(b"<END>")
                     break
 
                 self.my_socket.send(data)
+                i += 1
+                #progress bar update here
+
+
+
                 #sleep(1)
         # self.my_socket.sendall(b"<END>")
-
+        print("sent", i, "packets")
         # file.close()
 #          self.my_socket() close?
 
