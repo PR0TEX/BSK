@@ -413,7 +413,7 @@ class AppWindow(QMainWindow):
             self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
 
             receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
-            #receive_thread = Thread(target=receive_file, args=(client_socket,))
+            #receive_thread = Thread(target=receive_file, args=(client_socket, self))
             receive_thread.start()
 
             self.my_socket = client_socket
@@ -451,7 +451,7 @@ class AppWindow(QMainWindow):
         self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
 
         #receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
-        receive_thread = Thread(target=receive_file, args=(client_socket,))
+        receive_thread = Thread(target=receive_file, args=(client_socket, self))
         receive_thread.start()
 
     def send_message(self, content):
