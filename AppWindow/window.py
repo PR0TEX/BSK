@@ -58,12 +58,15 @@ class AESCipher:
 class AppWindow(QMainWindow):
     def __init__(self):
         # each app should have a socket bound to it. It will be used in threads to listen for incoming messages.
-        self.my_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.listening_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sending_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
         self.own_ip = get_own_ip()
         self.partner_ip = ""
         self.encoding_mode = "None"
         self.sess_key = ""
         self.encryptor = AESCipher(self.sess_key, self.encoding_mode)
+        self.receive_thread = Thread()
         super().__init__()
         self.setWindowTitle("SCS Project - Encrypted Data Transmission")
         # self.setWindowIcon(QIcon("path/to/favicon.png"))
@@ -246,11 +249,12 @@ class AppWindow(QMainWindow):
             self.logout_button.hide()
 
         def logout():
-            self.my_socket.close()
+            self.listening_socket.close()
+            self.sending_socket.close()
 
             self.setWindowTitle("SCS Project - Encrypted Data Transmission")
 
-            self.my_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.listening_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.own_ip = get_own_ip()
             self.partner_ip = ""
             self.encoding_mode = "None"
@@ -422,12 +426,15 @@ class AppWindow(QMainWindow):
             print("Received encoding mode:", self.encoding_mode)
 
             self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
+            self.listening_socket = client_socket
+            self.sending_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.sending_socket.bind((ip, 12346))
 
-            receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
-            #receive_thread = Thread(target=receive_file, args=(client_socket, self))
+            receive_thread = Thread(target=receive_messages, args=(self.listening_socket, self,))
+            # receive_thread = Thread(target=receive_file, args=(client_socket, self))
             receive_thread.start()
 
-            self.my_socket = client_socket
+
         except ConnectionRefusedError:
             print('Unable to connect to the server.')
             self.logout_button.click()
@@ -437,7 +444,7 @@ class AppWindow(QMainWindow):
 
     def create_room(self, encoding):
         host = ''
-        port = 12345
+        port = 12346
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.bind((host, port))
         server_socket.listen(1)
@@ -450,29 +457,32 @@ class AppWindow(QMainWindow):
         self.setWindowTitle("Connected to: " + client_address[0])
         self.partner_ip = client_address[0]
 
-        self.my_socket = client_socket
+        self.sending_socket = client_socket
+        self.listening_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sending_socket.bind((self.partner_ip, 12345))
+
         self.encoding_mode = encoding
         self.sess_key = os.urandom(16)
 
-        self.my_socket.sendall(self.sess_key)
+        self.sending_socket.sendall(self.sess_key)
         print("Sending session key:", self.sess_key)
-        self.my_socket.sendall(self.encoding_mode.encode('utf-8'))
+        self.sending_socket.sendall(self.encoding_mode.encode('utf-8'))
         print("Sending encoding mode:", self.encoding_mode)
 
         self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
 
-        receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
+        self.receive_thread = Thread(target=receive_messages, args=(self.listening_socket, self,))
         #receive_thread = Thread(target=receive_file, args=(client_socket, self))
-        receive_thread.start()
+        self.receive_thread.start()
 
     def send_message(self, content):
         # Send message here
         try:
-            self.my_socket.sendall(self.encryptor.encrypt(content))
+            self.sending_socket.sendall(self.encryptor.encrypt(content))
         except:
             print('An error occurred while sending message.')
             self.logout_button.click()
-            self.my_socket.close()
+            self.listening_socket.close()
 
     def send_file(self, file):
 
@@ -481,8 +491,8 @@ class AppWindow(QMainWindow):
         # file = open(file_name, "rb")
         file_size = os.path.getsize(file)
 
-        self.my_socket.send(file_name.encode("utf-8"))
-        self.my_socket.send(str(file_size).encode("utf-8"))
+        self.sending_socket.send(file_name.encode("utf-8"))
+        self.sending_socket.send(str(file_size).encode("utf-8"))
 
         sleep(1)
         print("will send", math.ceil(file_size / 1024), "packets")
@@ -492,10 +502,10 @@ class AppWindow(QMainWindow):
             while True:
                 data = f.read(1024)
                 if not data:
-                    self.my_socket.send(b"<END>")
+                    self.sending_socket.send(b"<END>")
                     break
 
-                self.my_socket.send(data)
+                self.sending_socket.send(data)
                 i += 1
 
                 window.progressBar.setValue(math.ceil(i / (file_size / 1024) * 100))
@@ -504,10 +514,10 @@ class AppWindow(QMainWindow):
         print("sent", i, "packets")
 
 
-def receive_file(client_socket, window: AppWindow):
-    file_name = client_socket.recv(1024).decode("utf-8")
+def receive_file(listening_socket, window: AppWindow):
+    file_name = listening_socket.recv(1024).decode("utf-8")
     print(file_name)
-    file_size = client_socket.recv(1024).decode("utf-8")
+    file_size = listening_socket.recv(1024).decode("utf-8")
     print(file_size)
 
     if not os.path.exists("downloads"):
@@ -516,7 +526,7 @@ def receive_file(client_socket, window: AppWindow):
     with open(os.path.join("downloads", f"recv_{file_name}"), "w") as f:
         i = 0
         while True:
-            data = client_socket.recv(1024).decode("utf-8")
+            data = listening_socket.recv(1024).decode("utf-8")
             if data.encode("utf-8")[-5:] == b"<END>":
                 f.write(data[:-5])
                 break
@@ -528,11 +538,11 @@ def receive_file(client_socket, window: AppWindow):
     print("done")
 
 
-def receive_messages(client_socket, window: AppWindow):
+def receive_messages(listeninig_socket, window: AppWindow):
     while True:
         try:
             # CBC
-            ciphertext = client_socket.recv(1024)
+            ciphertext = listeninig_socket.recv(1024)
             # Generate the same key used by the server
 
             # message = decrypt_cbc(key, ciphertext).decode('utf-8')
@@ -545,7 +555,7 @@ def receive_messages(client_socket, window: AppWindow):
         except:
             print('An error occurred while receiving messages.')
             window.logout_button.click()
-            client_socket.close()
+            listeninig_socket.close()
             break
 
 
