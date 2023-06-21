@@ -399,10 +399,6 @@ class AppWindow(QMainWindow):
         select_file_button.clicked.connect(show_file_selection_prompt)
         confirm_file_button.clicked.connect(confirm_file_pressed)
 
-
-
-
-
     def create_popup(self, title, message, mode):
         dlg = CustomDialog(dialog_type=mode) if mode else CustomDialog()
         dlg.set_message(message)
@@ -435,7 +431,7 @@ class AppWindow(QMainWindow):
 
             self.listening_socket = client_socket
 
-            receive_thread = Thread(target=receive_messages, args=(self.listening_socket, self,))
+            receive_thread = Thread(target=receive_messages, args=(self.listening_socket,))
             # receive_thread = Thread(target=receive_file, args=(client_socket, self))
             receive_thread.start()
 
@@ -478,8 +474,8 @@ class AppWindow(QMainWindow):
         client_socket.connect((client_address[0], 12345))
         self.sending_socket = client_socket
 
-        self.receive_thread = Thread(target=receive_messages, args=(self.listening_socket, self,))
-        #receive_thread = Thread(target=receive_file, args=(client_socket, self))
+        self.receive_thread = Thread(target=receive_messages, args=(self.listening_socket,))
+        #receive_thread = Thread(target=receive_file, args=(client_socket,))
         self.receive_thread.start()
 
     def send_message(self, content):
@@ -521,7 +517,7 @@ class AppWindow(QMainWindow):
         print("sent", i, "packets")
 
 
-def receive_file(listening_socket, window: AppWindow):
+def receive_file(listening_socket):
     file_name = listening_socket.recv(1024).decode("utf-8")
     print(file_name)
     file_size = listening_socket.recv(1024).decode("utf-8")
@@ -545,7 +541,7 @@ def receive_file(listening_socket, window: AppWindow):
     print("done")
 
 
-def receive_messages(listeninig_socket, window: AppWindow):
+def receive_messages(listeninig_socket):
     while True:
         try:
             # CBC
@@ -565,6 +561,8 @@ def receive_messages(listeninig_socket, window: AppWindow):
             listeninig_socket.close()
             break
 
+
+global window
 
 if __name__ == "__main__":
     app = QApplication([])
