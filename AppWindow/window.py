@@ -570,10 +570,10 @@ class AppWindow(QMainWindow):
                 while True:
                     data = f.read(1024)
                     if not data:
-                        self.sending_socket.send(self.encryptor.encrypt(b"<END>".decode("utf-8")))
+                        self.sending_socket.send(b"<END>".encode("utf-8"))
                         break
 
-                    self.sending_socket.send(self.encryptor.encrypt(data.decode("utf-8")))
+                    self.sending_socket.send(data)
                     i += 1
 
                     window.progressBar.setValue(math.ceil(i / (file_size / 1024) * 100))
@@ -582,7 +582,7 @@ class AppWindow(QMainWindow):
             print("sent", i, "packets")
         except Exception as error:
             print("There was an error while sending the file")
-            print(error)
+            print(error.with_traceback())
             self.logout_button.click()
 
 
@@ -614,12 +614,11 @@ def receive_messages(listening_socket):
                 with open(os.path.join("downloads", f"recv_{file_name}"), "w") as f:
                     i = 0
                     while True:
-                        data = listening_socket.recv(2048)
-                        data = window.encryptor.decrypt(data)
-                        if data[-5:] == b"<END>":
-                            f.write(data[:-5].decode("utf-8"))
+                        data = listening_socket.recv(1024)
+                        if data[-5:].decode("utf-8") == b"<END>":
+                            f.write(data[:-5])
                             break
-                        f.write(data.decode("utf-8"))
+                        f.write(data)
                         i += 1
                         window.progressBar.setValue(math.ceil(i / (int(file_size) / 1024) * 100))
                         # sleep(1)
@@ -637,6 +636,7 @@ def receive_messages(listening_socket):
                 print(message)
         except Exception as error:
             print("There was an error while receiving messages")
+            print(error.with_traceback())
             print(error)
             window.logout_button.click()
             break
