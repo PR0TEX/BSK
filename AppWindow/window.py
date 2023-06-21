@@ -460,7 +460,7 @@ class AppWindow(QMainWindow):
             # self.sess_key = client_socket.recv(1024)
             print("Received session key:", self.sess_key)
             encrypted_encoding_mode = client_socket.recv(1024)
-            self.encoding_mode = self.rsa_keys.decrypt_rsa(encrypted_encoding_mode.encode('utf-8'), self.rsa_keys.private_key).decode('utf-8')
+            self.encoding_mode = self.rsa_keys.decrypt_rsa(encrypted_encoding_mode, self.rsa_keys.private_key).decode('utf-8')
             print("Received encoding mode:", self.encoding_mode)
 
             self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
