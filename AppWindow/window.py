@@ -16,11 +16,41 @@ from hashlib import md5
 from base64 import b64decode
 from base64 import b64encode
 
-from Crypto.Cipher import AES
+from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad, unpad
+from Crypto.PublicKey import RSA
 
 from time import sleep
+
+class RSA:
+    def __init__(self, size):
+        key_pair = RSA.generate(size)
+        self.public_key = key_pair.public_key().exportKey()
+        self.private_key = key_pair.exportKey()
+
+    def get_public_key(self):
+        return self.public_key
+
+    def get_private_key(self):
+        return self.private_key
+
+    def encrypt_rsa(self, message, public_key):
+        key = RSA.importKey(public_key)
+
+        cipher = PKCS1_OAEP.new(key)
+        ciphertext = cipher.encrypt(message)
+
+        return ciphertext
+
+    def decrypt_rsa(self, ciphertext, private_key):
+        key = RSA.importKey(private_key)
+        cipher = PKCS1_OAEP.new(key)
+
+        message = cipher.decrypt(ciphertext)
+
+        return message
+
 
 class AESCipher:
     def __init__(self, key, mode):
@@ -62,8 +92,12 @@ class AppWindow(QMainWindow):
         self.own_ip = get_own_ip()
         self.partner_ip = ""
         self.encoding_mode = "None"
+        # TODO check if necessary
+        self.rsa_keys = RSA(1024)
+
         self.sess_key = ""
         self.encryptor = AESCipher(self.sess_key, self.encoding_mode)
+
         super().__init__()
         self.setWindowTitle("SCS Project - Encrypted Data Transmission")
         # self.setWindowIcon(QIcon("path/to/favicon.png"))
@@ -398,7 +432,13 @@ class AppWindow(QMainWindow):
             self.setWindowTitle("Connected to: " + ip)
             self.partner_ip = ip
 
-            self.sess_key = client_socket.recv(1024)
+            self.my_socket.sendall(self.rsa_keys.public_key)
+            print("Sending public key")
+
+            encrypted_sess_key = client_socket.recv(1024)
+
+            self.sess_key = RSA.decrypt_rsa(encrypted_sess_key, self.rsa_keys.private_key)
+            
             print("Received session key:", self.sess_key)
             self.encoding_mode = client_socket.recv(1024).decode('utf-8')
             print("Received encoding mode:", self.encoding_mode)
@@ -434,10 +474,16 @@ class AppWindow(QMainWindow):
 
         self.my_socket = client_socket
         self.encoding_mode = encoding
-        self.sess_key = os.urandom(16)
 
-        self.my_socket.sendall(self.sess_key)
-        print("Sending session key:", self.sess_key)
+        partner_public_key = server_socket.recv(1024).decode("utf-8")
+        # generate session key
+        self.sess_key = os.urandom(16)
+        # encrypt session key with peer's public key
+        encrypted_sess_key = RSA.encrypt_rsa(self.sess_key, partner_public_key)
+        # send encrypted session key
+        self.my_socket.sendall(encrypted_sess_key)
+
+        # print("Sending session key:", self.sess_key)
         self.my_socket.sendall(self.encoding_mode.encode('utf-8'))
         print("Sending encoding mode:", self.encoding_mode)
 
@@ -484,7 +530,6 @@ class AppWindow(QMainWindow):
                 # progress bar update here
 
         print("sent", i, "packets")
-
 
 
 def receive_file(client_socket, window: AppWindow):
