@@ -103,7 +103,7 @@ class AppWindow(QMainWindow):
         self.encryptor = AESCipher(self.sess_key, self.encoding_mode)
         self.receive_thread = Thread()
         super().__init__()
-        self.setWindowTitle("SCS Project - Encrypted Data Transmission")
+        self.setWindowTitle("SCS Project - Encrypted Data Transmission (Not connected)")
         # self.setWindowIcon(QIcon("path/to/favicon.png"))
         self.setFixedSize(720, 540)  # Make the window non-resizable
         self.setStyleSheet("background-color: #2c2f33;")
@@ -280,10 +280,15 @@ class AppWindow(QMainWindow):
             self.logout_button.hide()
 
         def logout():
+            try:
+                self.sending_socket.send(b"<ENDCHAT>")
+            except:
+                pass
+
             self.listening_socket.close()
             self.sending_socket.close()
 
-            self.setWindowTitle("SCS Project - Encrypted Data Transmission")
+            self.setWindowTitle("SCS Project - Encrypted Data Transmission (Not connected)")
 
             self.listening_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.own_ip = get_own_ip()
@@ -536,38 +541,42 @@ class AppWindow(QMainWindow):
         try:
             self.sending_socket.sendall(self.encryptor.encrypt(content))
         except:
-            print('An error occurred while sending message.')
+            print('An error occurred while sending the message.')
             self.logout_button.click()
-            self.listening_socket.close()
 
     def send_file(self, file):
+        try:
+            print("sending file...")
+            file_name = file.split("/")[-1]
+            # file = open(file_name, "rb")
+            file_size = os.path.getsize(file_name)
 
-        print("sending file...")
-        file_name = file.split("/")[-1]
-        # file = open(file_name, "rb")
-        file_size = os.path.getsize(file_name)
+            self.sending_socket.send(b"<FILE>")
 
-        self.sending_socket.send(file_name.encode("utf-8"))
-        self.sending_socket.send(str(file_size).encode("utf-8"))
+            self.sending_socket.send(file_name.encode("utf-8"))
+            self.sending_socket.send(str(file_size).encode("utf-8"))
 
-        sleep(1)
+            sleep(1)
 
-        print("will send", math.ceil(file_size / 1024), "packets")
-        i = 0
-        with open(file_name, "rb") as f:
-            while True:
-                data = f.read(1024)
-                if not data:
-                    self.sending_socket.send(b"<END>")
-                    break
+            print("will send", math.ceil(file_size / 1024), "packets")
+            i = 0
+            with open(file_name, "rb") as f:
+                while True:
+                    data = f.read(1024)
+                    if not data:
+                        self.sending_socket.send(b"<END>")
+                        break
 
-                self.sending_socket.send(data)
-                i += 1
+                    self.sending_socket.send(data)
+                    i += 1
 
-                window.progressBar.setValue(math.ceil(i / (file_size / 1024) * 100))
-                # progress bar update here
+                    window.progressBar.setValue(math.ceil(i / (file_size / 1024) * 100))
+                    # progress bar update here
 
-        print("sent", i, "packets")
+            print("sent", i, "packets")
+        except:
+            print("There was an error while sending the file")
+            self.logout_button.click()
 
 
 def receive_file(listening_socket):
@@ -595,27 +604,55 @@ def receive_file(listening_socket):
     print("done")
 
 
-def receive_messages(listeninig_socket):
+def receive_messages(listening_socket):
     global window
     while True:
         try:
             # CBC
-            ciphertext = listeninig_socket.recv(1024)
+            ciphertext = listening_socket.recv(1024)
             # Generate the same key used by the server
 
             # message = decrypt_cbc(key, ciphertext).decode('utf-8')
             # ECB
             message = window.encryptor.decrypt(ciphertext)
 
-            window.create_popup("Message received!", message.decode("utf-8"), "ok").exec()
 
-            print(message)
+            if message == b"<FILE>":
+                file_name = listening_socket.recv(1024).decode("utf-8")
+                print(file_name)
+                file_size = listening_socket.recv(1024).decode("utf-8")
+                print(file_size)
+
+                if not os.path.exists("downloads"):
+                    os.makedirs("downloads")
+
+                with open(os.path.join("downloads", f"recv_{file_name}"), "w") as f:
+                    i = 0
+                    while True:
+                        data = listening_socket.recv(1024).decode("utf-8")
+                        if data.encode("utf-8")[-5:] == b"<END>":
+                            f.write(data[:-5])
+                            break
+                        f.write(data)
+                        i += 1
+                        window.progressBar.setValue(math.ceil(i / (file_size / 1024) * 100))
+                        # sleep(1)
+
+                print("file received")
+                window.create_popup("File received!", "Received "+file_name, "ok").exec()
+
+            elif message == b"<ENDCHAT>":
+                window.create_popup("Disconnecting", "Lost connection with partner", "ok").exec()
+                window.logout_button.click()
+                return
+            else:
+                window.create_popup("Message received!", message.decode("utf-8"), "ok").exec()
+
+                print(message)
         except:
             print('An error occurred while receiving messages.')
             window.logout_button.click()
             break
-
-
 
 
 if __name__ == "__main__":
