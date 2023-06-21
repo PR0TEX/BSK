@@ -319,7 +319,7 @@ class AppWindow(QMainWindow):
                 dlg.set_title("Send message?")
 
                 if dlg.exec():
-                    self.send_message(message_content, encoding)
+                    self.send_message(message_content)
                     show_user_logged_in_gui()
                 else:
                     pass
@@ -450,8 +450,8 @@ class AppWindow(QMainWindow):
 
         self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
 
-        #receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
-        receive_thread = Thread(target=receive_file, args=(client_socket, self))
+        receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
+        #receive_thread = Thread(target=receive_file, args=(client_socket, self))
         receive_thread.start()
 
     def send_message(self, content):
@@ -496,7 +496,7 @@ class AppWindow(QMainWindow):
 def receive_file(client_socket, window: AppWindow):
     file_name = client_socket.recv(1024).decode("utf-8")
     print(file_name)
-    file_size = int(client_socket.recv(1024).decode("utf-8"))
+    file_size = client_socket.recv(1024).decode("utf-8")
     print(file_size)
 
     if not os.path.exists("downloads"):
