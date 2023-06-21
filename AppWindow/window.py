@@ -411,7 +411,7 @@ class AppWindow(QMainWindow):
 
     def connect_to_room(self, ip):
         host = ip # Replace with the server's IP address
-        port = 12345  # Replace with the desired port number
+        port = 12346  # Replace with the desired port number
 
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
@@ -426,9 +426,9 @@ class AppWindow(QMainWindow):
             print("Received encoding mode:", self.encoding_mode)
 
             self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
-            self.listening_socket = client_socket
-            self.sending_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.sending_socket.bind((ip, 12346))
+            self.sending_socket = client_socket
+            self.listening_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.listening_socket.bind((ip, 12346))
 
             receive_thread = Thread(target=receive_messages, args=(self.listening_socket, self,))
             # receive_thread = Thread(target=receive_file, args=(client_socket, self))
@@ -457,7 +457,7 @@ class AppWindow(QMainWindow):
         self.setWindowTitle("Connected to: " + client_address[0])
         self.partner_ip = client_address[0]
 
-        self.sending_socket = client_socket
+        self.listening_socket = client_socket
         self.listening_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sending_socket.bind((self.partner_ip, 12345))
 
