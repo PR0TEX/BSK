@@ -19,8 +19,39 @@ from base64 import b64encode
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad, unpad
+from Crypto.PublicKey import RSA
 
 from time import sleep
+
+
+class RSAkeys:
+    def __init__(self, size):
+        key_pair = RSA.generate(size)
+        self.public_key = key_pair.public_key().exportKey()
+        self.private_key = key_pair.exportKey()
+
+    def get_public_key(self):
+        return self.public_key
+
+    def get_private_key(self):
+        return self.private_key
+
+    def encrypt_rsa(self, message, public_key):
+        key = RSA.importKey(public_key)
+
+        cipher = PKCS1_OAEP.new(key)
+        ciphertext = cipher.encrypt(message)
+
+        return ciphertext
+
+    def decrypt_rsa(self, ciphertext, private_key):
+        key = RSA.importKey(private_key)
+        cipher = PKCS1_OAEP.new(key)
+
+        message = cipher.decrypt(ciphertext)
+
+        return message
+
 
 class AESCipher:
     def __init__(self, key, mode):
@@ -64,6 +95,10 @@ class AppWindow(QMainWindow):
         self.own_ip = get_own_ip()
         self.partner_ip = ""
         self.encoding_mode = "None"
+
+        # TODO check if necessary
+        self.rsa_keys = RSAkeys(1024)
+
         self.sess_key = ""
         self.encryptor = AESCipher(self.sess_key, self.encoding_mode)
         self.receive_thread = Thread()
@@ -416,8 +451,17 @@ class AppWindow(QMainWindow):
             self.setWindowTitle("Connected to: " + ip)
             self.partner_ip = ip
 
-            self.sess_key = client_socket.recv(1024)
+            # RSA
+            client_socket.sendall(self.rsa_keys.public_key)
+            print("Sending public key")
+
+            encrypted_sess_key = client_socket.recv(1024)
+
+            self.sess_key = RSAkeys.decrypt_rsa(encrypted_sess_key, self.rsa_keys.private_key)
+
+            # self.sess_key = client_socket.recv(1024)
             print("Received session key:", self.sess_key)
+            # TODO encrypt
             self.encoding_mode = client_socket.recv(1024).decode('utf-8')
             print("Received encoding mode:", self.encoding_mode)
 
@@ -461,9 +505,20 @@ class AppWindow(QMainWindow):
         self.listening_socket = client_socket
 
         self.encoding_mode = encoding
-        self.sess_key = os.urandom(16)
 
-        self.listening_socket.sendall(self.sess_key)
+        # RSA
+        partner_public_key = self.listening_socket.recv(1024).decode("utf-8")
+        # generate session key
+        self.sess_key = os.urandom(16)
+        # encrypt session key with peer's public key
+        encrypted_sess_key = RSAkeys.encrypt_rsa(self.sess_key, partner_public_key)
+        # send encrypted session key
+        self.listening_socket.sendall(encrypted_sess_key)
+
+
+        # self.sess_key = os.urandom(16)
+        #
+        # self.listening_socket.sendall(self.sess_key)
         print("Sending session key:", self.sess_key)
         self.listening_socket.sendall(self.encoding_mode.encode('utf-8'))
         print("Sending encoding mode:", self.encoding_mode)
