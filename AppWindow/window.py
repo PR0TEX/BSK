@@ -614,7 +614,7 @@ def receive_messages(listening_socket):
                     while True:
                         data = listening_socket.recv(1024)
                         if data[-5:] == b"<END>":
-                            f.write(data[:-5])
+                            f.write(data[:-5].decode("utf-8"))
                             break
                         f.write(data.decode("utf-8"))
                         i += 1
