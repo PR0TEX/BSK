@@ -570,7 +570,7 @@ class AppWindow(QMainWindow):
                 while True:
                     data = f.read(1024)
                     if not data:
-                        self.sending_socket.send(b"<END>".encode("utf-8"))
+                        self.sending_socket.send(b"<END>".decode("utf-8"))
                         break
 
                     self.sending_socket.send(data)
