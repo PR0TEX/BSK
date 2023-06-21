@@ -559,9 +559,8 @@ class AppWindow(QMainWindow):
             self.sending_socket.send(self.encryptor.encrypt(b"<FILE>".decode("utf-8")))
 
             self.sending_socket.send(self.encryptor.encrypt(file_name))
-            sleep(0.1)
+            sleep(1)
             self.sending_socket.send(self.encryptor.encrypt(str(file_size)))
-
             sleep(1)
 
             print("will send", math.ceil(file_size / 1024), "packets")
@@ -582,7 +581,6 @@ class AppWindow(QMainWindow):
             print("sent", i, "packets")
         except Exception as error:
             print("There was an error while sending the file")
-            print(error.with_traceback())
             self.logout_button.click()
 
 
@@ -615,10 +613,10 @@ def receive_messages(listening_socket):
                     i = 0
                     while True:
                         data = listening_socket.recv(1024)
-                        if data[-5:].decode("utf-8") == b"<END>":
+                        if data[-5:] == b"<END>":
                             f.write(data[:-5])
                             break
-                        f.write(data)
+                        f.write(data.decode("utf-8"))
                         i += 1
                         window.progressBar.setValue(math.ceil(i / (int(file_size) / 1024) * 100))
                         # sleep(1)
@@ -636,7 +634,6 @@ def receive_messages(listening_socket):
                 print(message)
         except Exception as error:
             print("There was an error while receiving messages")
-            print(error.with_traceback())
             print(error)
             window.logout_button.click()
             break
