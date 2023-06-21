@@ -115,10 +115,10 @@ class AppWindow(QMainWindow):
         send_file_button.setStyleSheet(button_style)
         send_file_button.hide()
 
-        logout_button = QPushButton("Logout", self)
-        logout_button.setGeometry(200, 240, 320, 60)
-        logout_button.setStyleSheet(button_style)
-        logout_button.hide()
+        self.logout_button = QPushButton("Logout", self)
+        self.logout_button.setGeometry(200, 240, 320, 60)
+        self.logout_button.setStyleSheet(button_style)
+        self.logout_button.hide()
 
         # Sending file GUI
         select_file_button = QPushButton("Select file", self)
@@ -190,6 +190,22 @@ class AppWindow(QMainWindow):
         #  - add send buttons DONE
         #  - add file browsing LATER
 
+
+        def logout():
+            self.my_socket.close()
+            self.encryptor.__del__()
+
+            self.setWindowTitle("SCS Project - Encrypted Data Transmission")
+
+            self.my_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.own_ip = get_own_ip()
+            self.partner_ip = ""
+            self.encoding_mode = "None"
+            self.sess_key = ""
+            self.encryptor = AESCipher(self.sess_key, self.encoding_mode)
+
+            show_login_gui()
+
         # Button press handlers
         def show_user_logged_in_gui():
             # hide all visible widgets and unhide all widgets for the message selection
@@ -211,7 +227,7 @@ class AppWindow(QMainWindow):
 
             send_message_button.show()
             send_file_button.show()
-            logout_button.show()
+            self.logout_button.show()
 
             pass
 
@@ -226,7 +242,7 @@ class AppWindow(QMainWindow):
 
             send_message_button.hide()
             send_file_button.hide()
-            logout_button.hide()
+            self.logout_button.hide()
 
         def show_send_message_gui():
             if self.partner_ip == "":
@@ -237,7 +253,7 @@ class AppWindow(QMainWindow):
                 return
             send_message_button.hide()
             send_file_button.hide()
-            logout_button.hide()
+            self.logout_button.hide()
 
             label_message.show()
             message_field.setReadOnly(False)
@@ -259,7 +275,7 @@ class AppWindow(QMainWindow):
                 return
             send_message_button.hide()
             send_file_button.hide()
-            logout_button.hide()
+            self.logout_button.hide()
 
             select_file_button.show()
             message_field.setReadOnly(True)
@@ -299,7 +315,7 @@ class AppWindow(QMainWindow):
                 dlg.set_title("Send message?")
 
                 if dlg.exec():
-                    self.send_message(message_content, encoding)
+                    self.send_message(message_content)
                     show_user_logged_in_gui()
                 else:
                     pass
@@ -356,7 +372,7 @@ class AppWindow(QMainWindow):
         # Connect the button press handlers to the buttons
         create_room_button.clicked.connect(create_room_button_pressed)
         connect_to_room_button.clicked.connect(connect_to_room_button_pressed)
-        logout_button.clicked.connect(show_login_gui)
+        self.logout_button.clicked.connect(logout)
         send_message_button.clicked.connect(show_send_message_gui)
         send_file_button.clicked.connect(show_send_file_gui)
         back_button.clicked.connect(show_user_logged_in_gui)
@@ -364,6 +380,12 @@ class AppWindow(QMainWindow):
         select_file_button.clicked.connect(show_file_selection_prompt)
         confirm_file_button.clicked.connect(confirm_file_pressed)
 
+
+    def create_popup(self, title, message, mode):
+        dlg = CustomDialog(dialog_type=mode) if mode else CustomDialog()
+        dlg.set_message(message)
+        dlg.set_title(title)
+        return dlg
 
     def connect_to_room(self, ip):
         host = ip # Replace with the server's IP address
@@ -373,6 +395,7 @@ class AppWindow(QMainWindow):
         try:
             client_socket.connect((host, port))
             print('Connected to the server.')
+            self.setWindowTitle("Connected to: " + ip)
             self.partner_ip = ip
 
             self.sess_key = client_socket.recv(1024)
@@ -382,13 +405,14 @@ class AppWindow(QMainWindow):
 
             self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
 
-            #receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
-            receive_thread = Thread(target=receive_file, args=(client_socket,))
+            receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
+            #receive_thread = Thread(target=receive_file, args=(client_socket, self))
             receive_thread.start()
 
             self.my_socket = client_socket
         except ConnectionRefusedError:
             print('Unable to connect to the server.')
+            self.logout_button.click()
             return False
 
         return True
@@ -401,9 +425,11 @@ class AppWindow(QMainWindow):
         server_socket.listen(1)
         print('Waiting for incoming connections...')
 
+        self.setWindowTitle("Waiting for somebody to connect...")
+
         client_socket, client_address = server_socket.accept()
         print('Connected to', client_address)
-
+        self.setWindowTitle("Connected to: " + client_address[0])
         self.partner_ip = client_address[0]
 
         self.my_socket = client_socket
@@ -417,23 +443,17 @@ class AppWindow(QMainWindow):
 
         self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
 
-        #receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
-        receive_thread = Thread(target=receive_file, args=(client_socket,))
+        receive_thread = Thread(target=receive_messages, args=(client_socket, self,))
+        #receive_thread = Thread(target=receive_file, args=(client_socket, self))
         receive_thread.start()
 
-
-
-    def send_message(self, content, encoding):
+    def send_message(self, content):
         # Send message here
         try:
-
-            # ECB
-            # Generate a random key (16 bytes) for demonstration purposes
-
             self.my_socket.send(self.encryptor.encrypt(content))
-
         except:
             print('An error occurred while sending message.')
+            self.logout_button.click()
             self.my_socket.close()
 
     def send_file(self, file):
@@ -459,12 +479,16 @@ class AppWindow(QMainWindow):
 
                 self.my_socket.send(data)
                 i += 1
+
+                window.progressBar.setValue(math.ceil(i / (file_size / 1024) * 100))
                 # progress bar update here
 
         print("sent", i, "packets")
 
 
-def receive_file(client_socket):
+
+def receive_file(client_socket, window: AppWindow):
+
     file_name = client_socket.recv(1024).decode("utf-8")
     print(file_name)
     file_size = client_socket.recv(1024).decode("utf-8")
@@ -474,11 +498,14 @@ def receive_file(client_socket):
         os.makedirs("downloads")
 
     with open(os.path.join("downloads", f"recv_{file_name}"), "w") as f:
+        i = 0
         while True:
             data = client_socket.recv(1024).decode("utf-8")
             if data.encode("utf-8") == b"<END>":
                 break
             f.write(data)
+            i += 1
+            window.progressBar.setValue(math.ceil(i / (file_size / 1024) * 100))
             # sleep(1)
 
     print("done")
@@ -494,6 +521,8 @@ def receive_messages(client_socket, window: AppWindow):
             # message = decrypt_cbc(key, ciphertext).decode('utf-8')
             # ECB
             message = window.encryptor.decrypt(ciphertext)
+
+            window.create_popup("Message received!", message, "ok").exec()
 
             print(message)
         except:
