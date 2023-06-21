@@ -568,7 +568,7 @@ class AppWindow(QMainWindow):
                         self.sending_socket.send(self.encryptor.encrypt(b"<END>".decode("utf-8")))
                         break
 
-                    self.sending_socket.send(self.encryptor.encrypt(data))
+                    self.sending_socket.send(self.encryptor.encrypt(data.decode("utf-8")))
                     i += 1
 
                     window.progressBar.setValue(math.ceil(i / (file_size / 1024) * 100))
@@ -610,10 +610,10 @@ def receive_messages(listening_socket):
                     while True:
                         data = listening_socket.recv(2048)
                         data = window.encryptor.decrypt(data)
-                        if data.encode("utf-8")[-5:] == b"<END>":
+                        if data[-5:] == b"<END>":
                             f.write(data[:-5])
                             break
-                        f.write(data)
+                        f.write(data.decode("utf-8"))
                         i += 1
                         window.progressBar.setValue(math.ceil(i / (file_size / 1024) * 100))
                         # sleep(1)
