@@ -622,7 +622,7 @@ def receive_messages(listening_socket):
                         # sleep(1)
 
                 print("file received")
-                window.create_popup("File received!", "Received "+file_name, "ok").exec()
+                #window.create_popup("File received!", "Received "+file_name, "ok").exec()
 
             elif message == b"<ENDCHAT>":
                 window.create_popup("Disconnecting", "Lost connection with partner", "ok").exec()
