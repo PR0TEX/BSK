@@ -580,29 +580,6 @@ class AppWindow(QMainWindow):
             self.logout_button.click()
 
 
-def receive_file(listening_socket):
-    global window
-    file_name = listening_socket.recv(1024).decode("utf-8")
-    print(file_name)
-    file_size = listening_socket.recv(1024).decode("utf-8")
-    print(file_size)
-
-    if not os.path.exists("downloads"):
-        os.makedirs("downloads")
-
-    with open(os.path.join("downloads", f"recv_{file_name}"), "w") as f:
-        i = 0
-        while True:
-            data = listening_socket.recv(2048).decode("utf-8")
-            if data.encode("utf-8")[-5:] == b"<END>":
-                f.write(data[:-5])
-                break
-            f.write(data)
-            i += 1
-            window.progressBar.setValue(math.ceil(i / (file_size / 1024) * 100))
-            # sleep(1)
-
-    print("done")
 
 
 def receive_messages(listening_socket):
@@ -631,7 +608,7 @@ def receive_messages(listening_socket):
                 with open(os.path.join("downloads", f"recv_{file_name}"), "w") as f:
                     i = 0
                     while True:
-                        data = listening_socket.recv(1024)
+                        data = listening_socket.recv(2048)
                         data = window.encryptor.decrypt(data)
                         if data.encode("utf-8")[-5:] == b"<END>":
                             f.write(data[:-5])
