@@ -3,7 +3,7 @@ import base64
 import os
 import math
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QLineEdit, QPushButton, QRadioButton, QDialog, \
-    QFileDialog
+    QFileDialog, QProgressBar
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtCore import Qt
 
@@ -96,6 +96,7 @@ class AppWindow(QMainWindow):
         self.partner_ip = ""
         self.encoding_mode = "None"
 
+
         # TODO check if necessary
         self.rsa_keys = RSAkeys(1024)
 
@@ -108,11 +109,16 @@ class AppWindow(QMainWindow):
         self.setFixedSize(720, 540)  # Make the window non-resizable
         self.setStyleSheet("background-color: #2c2f33;")
 
+        self.progressBar = QProgressBar(self)
+        self.progressBar.setGeometry(0, 500, 720, 40)
+
         label = QLabel(self)
         label.setText('Enter a key:')
         label.setFont(QFont('Tahoma', 15))
         label.setAlignment(Qt.AlignCenter)
         label.setGeometry(0, 100, 720, 30)
+
+
 
         key_field = QLineEdit(self)
         key_field.setGeometry(140, 160, 440, 50)  # set the position and size of the key_field widget
