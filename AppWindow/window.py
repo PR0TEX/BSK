@@ -616,13 +616,12 @@ def receive_messages(listening_socket):
             # ECB
             message = window.encryptor.decrypt(ciphertext)
 
-
             if message == b"<FILE>":
                 file_name = listening_socket.recv(1024)
-                file_name = window.encryptor.decrypt(file_name)
+                file_name = window.encryptor.decrypt(file_name).decode("utf-8")
                 print(file_name)
                 file_size = listening_socket.recv(1024)
-                file_size = window.encryptor.decrypt(file_size)
+                file_size = window.encryptor.decrypt(file_size).decode("utf-8")
                 print(file_size)
 
                 if not os.path.exists("downloads"):
