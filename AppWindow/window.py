@@ -195,20 +195,7 @@ class AppWindow(QMainWindow):
         #  - add file browsing LATER
 
 
-        def logout():
-            self.my_socket.close()
-            self.encryptor.__del__()
 
-            self.setWindowTitle("SCS Project - Encrypted Data Transmission")
-
-            self.my_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.own_ip = get_own_ip()
-            self.partner_ip = ""
-            self.encoding_mode = "None"
-            self.sess_key = ""
-            self.encryptor = AESCipher(self.sess_key, self.encoding_mode)
-
-            show_login_gui()
 
         # Button press handlers
         def show_user_logged_in_gui():
@@ -247,6 +234,20 @@ class AppWindow(QMainWindow):
             send_message_button.hide()
             send_file_button.hide()
             self.logout_button.hide()
+
+        def logout():
+            self.my_socket.close()
+
+            self.setWindowTitle("SCS Project - Encrypted Data Transmission")
+
+            self.my_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.own_ip = get_own_ip()
+            self.partner_ip = ""
+            self.encoding_mode = "None"
+            self.sess_key = ""
+            self.encryptor = AESCipher(self.sess_key, self.encoding_mode)
+
+            show_login_gui()
 
         def show_send_message_gui():
             if self.partner_ip == "":
