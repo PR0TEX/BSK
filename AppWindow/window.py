@@ -415,6 +415,7 @@ class AppWindow(QMainWindow):
 
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
+            # a comment
             client_socket.connect((host, port))
             print('Connected to the server.')
             self.setWindowTitle("Connected to: " + ip)
