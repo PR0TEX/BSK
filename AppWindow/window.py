@@ -468,7 +468,7 @@ class AppWindow(QMainWindow):
     def send_message(self, content):
         # Send message here
         try:
-            self.my_socket.send(self.encryptor.encrypt(content))
+            self.my_socket.sendall(self.encryptor.encrypt(content))
         except:
             print('An error occurred while sending message.')
             self.logout_button.click()
