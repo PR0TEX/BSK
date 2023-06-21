@@ -3,7 +3,7 @@ import base64
 import os
 import math
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QLineEdit, QPushButton, QRadioButton, QDialog, \
-    QFileDialog, QProgressBar
+    QFileDialog
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtCore import Qt
 
@@ -69,10 +69,6 @@ class AppWindow(QMainWindow):
         # self.setWindowIcon(QIcon("path/to/favicon.png"))
         self.setFixedSize(720, 540)  # Make the window non-resizable
         self.setStyleSheet("background-color: #2c2f33;")
-
-        self.progressBar = QProgressBar(self)
-        self.progressBar.setGeometry(0, 500, 720, 40)
-        self.progressBar.show()
 
         label = QLabel(self)
         label.setText('Enter a key:')
@@ -369,9 +365,6 @@ class AppWindow(QMainWindow):
         confirm_file_button.clicked.connect(confirm_file_pressed)
 
 
-    def showPopup(self, content, mode):
-        pass
-
     def connect_to_room(self, ip):
         host = ip # Replace with the server's IP address
         port = 12345  # Replace with the desired port number
@@ -448,17 +441,16 @@ class AppWindow(QMainWindow):
         print("sending file...")
         file_name = file.split("/")[-1]
         # file = open(file_name, "rb")
-        file_size = os.path.getsize(file)
+        file_size = os.path.getsize(file_name)
 
         self.my_socket.send(file_name.encode("utf-8"))
         self.my_socket.send(str(file_size).encode("utf-8"))
 
         sleep(1)
-        packets_no = math.ceil(file_size / 1024)
+
         print("will send", math.ceil(file_size / 1024), "packets")
         i = 0
-
-        with open(file, "rb") as f:
+        with open(file_name, "rb") as f:
             while True:
                 data = f.read(1024)
                 if not data:
@@ -467,11 +459,9 @@ class AppWindow(QMainWindow):
 
                 self.my_socket.send(data)
                 i += 1
-                window.progressBar.setValue(i/packets_no * 100)
                 # progress bar update here
 
         print("sent", i, "packets")
-
 
 
 def receive_file(client_socket):
@@ -486,8 +476,7 @@ def receive_file(client_socket):
     with open(os.path.join("downloads", f"recv_{file_name}"), "w") as f:
         while True:
             data = client_socket.recv(1024).decode("utf-8")
-            if data.encode("utf-8")[-5:] == b"<END>":
-                f.write(data[:-5])
+            if data.encode("utf-8") == b"<END>":
                 break
             f.write(data)
             # sleep(1)
