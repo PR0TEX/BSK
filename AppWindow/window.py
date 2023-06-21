@@ -23,7 +23,7 @@ from Crypto.PublicKey import RSA
 
 from time import sleep
 
-class RSA:
+class RSAkeys:
     def __init__(self, size):
         key_pair = RSA.generate(size)
         self.public_key = key_pair.public_key().exportKey()
@@ -93,7 +93,7 @@ class AppWindow(QMainWindow):
         self.partner_ip = ""
         self.encoding_mode = "None"
         # TODO check if necessary
-        self.rsa_keys = RSA(1024)
+        self.rsa_keys = RSAkeys(1024)
 
         self.sess_key = ""
         self.encryptor = AESCipher(self.sess_key, self.encoding_mode)
@@ -437,8 +437,8 @@ class AppWindow(QMainWindow):
 
             encrypted_sess_key = client_socket.recv(1024)
 
-            self.sess_key = RSA.decrypt_rsa(encrypted_sess_key, self.rsa_keys.private_key)
-            
+            self.sess_key = RSAkeys.decrypt_rsa(encrypted_sess_key, self.rsa_keys.private_key)
+
             print("Received session key:", self.sess_key)
             self.encoding_mode = client_socket.recv(1024).decode('utf-8')
             print("Received encoding mode:", self.encoding_mode)
@@ -479,7 +479,7 @@ class AppWindow(QMainWindow):
         # generate session key
         self.sess_key = os.urandom(16)
         # encrypt session key with peer's public key
-        encrypted_sess_key = RSA.encrypt_rsa(self.sess_key, partner_public_key)
+        encrypted_sess_key = RSAkeys.encrypt_rsa(self.sess_key, partner_public_key)
         # send encrypted session key
         self.my_socket.sendall(encrypted_sess_key)
 
