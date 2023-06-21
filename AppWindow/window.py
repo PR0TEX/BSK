@@ -496,7 +496,7 @@ class AppWindow(QMainWindow):
 def receive_file(client_socket, window: AppWindow):
     file_name = client_socket.recv(1024).decode("utf-8")
     print(file_name)
-    file_size = client_socket.recv(1024).decode("utf-8")
+    file_size = int(client_socket.recv(1024).decode("utf-8"))
     print(file_size)
 
     if not os.path.exists("downloads"):
