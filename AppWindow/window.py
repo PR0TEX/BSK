@@ -518,6 +518,7 @@ class AppWindow(QMainWindow):
 
 
 def receive_file(listening_socket):
+    global window
     file_name = listening_socket.recv(1024).decode("utf-8")
     print(file_name)
     file_size = listening_socket.recv(1024).decode("utf-8")
@@ -542,6 +543,7 @@ def receive_file(listening_socket):
 
 
 def receive_messages(listeninig_socket):
+    global window
     while True:
         try:
             # CBC
@@ -552,19 +554,19 @@ def receive_messages(listeninig_socket):
             # ECB
             message = window.encryptor.decrypt(ciphertext)
 
-            window.create_popup("Message received!", message, "ok").exec()
+            window.create_popup("Message received!", message.decode("utf-8"), "ok").exec()
 
             print(message)
         except:
             print('An error occurred while receiving messages.')
             window.logout_button.click()
-            listeninig_socket.close()
             break
 
 
-global window
+
 
 if __name__ == "__main__":
+    global window
     app = QApplication([])
     app.setStyle('Fusion')
 
