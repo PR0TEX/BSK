@@ -230,6 +230,16 @@ class AppWindow(QMainWindow):
             key_field.show()
             create_room_button.show()
             connect_to_room_button.show()
+            label_message.hide()
+            message_field.hide()
+            label_encoding.hide()
+            for opt in radios:
+                opt.hide()
+
+            confirm_message_button.hide()
+            back_button.hide()
+            select_file_button.hide()
+            confirm_file_button.hide()
 
             send_message_button.hide()
             send_file_button.hide()
@@ -529,11 +539,12 @@ def receive_messages(client_socket, window: AppWindow):
             # ECB
             message = window.encryptor.decrypt(ciphertext)
 
-            window.create_popup("Message received!", message, "ok").exec()
+            #window.create_popup("Message received!", message, "ok").exec()
 
             print(message)
         except:
             print('An error occurred while receiving messages.')
+            window.logout_button.click()
             client_socket.close()
             break
 
