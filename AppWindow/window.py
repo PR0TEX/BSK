@@ -551,10 +551,10 @@ class AppWindow(QMainWindow):
             # file = open(file_name, "rb")
             file_size = os.path.getsize(file)
 
-            self.sending_socket.send(self.encryptor.encrypt(b"<FILE>"))
+            self.sending_socket.send(self.encryptor.encrypt(b"<FILE>".decode("utf-8")))
 
-            self.sending_socket.send(file_name.encode("utf-8"))
-            self.sending_socket.send(str(file_size).encode("utf-8"))
+            self.sending_socket.send(self.encryptor.encrypt(file_name))
+            self.sending_socket.send(self.encryptor.encrypt(str(file_size)))
 
             sleep(1)
 
@@ -564,10 +564,10 @@ class AppWindow(QMainWindow):
                 while True:
                     data = f.read(1024)
                     if not data:
-                        self.sending_socket.send(b"<END>")
+                        self.sending_socket.send(self.encryptor.encrypt(b"<END>".decode("utf-8")))
                         break
 
-                    self.sending_socket.send(data)
+                    self.sending_socket.send(self.encryptor.encrypt(data))
                     i += 1
 
                     window.progressBar.setValue(math.ceil(i / (file_size / 1024) * 100))
@@ -618,9 +618,11 @@ def receive_messages(listening_socket):
 
 
             if message == b"<FILE>":
-                file_name = listening_socket.recv(1024).decode("utf-8")
+                file_name = listening_socket.recv(1024)
+                file_name = window.encryptor.decrypt(file_name)
                 print(file_name)
-                file_size = listening_socket.recv(1024).decode("utf-8")
+                file_size = listening_socket.recv(1024)
+                file_size = window.encryptor.decrypt(file_size)
                 print(file_size)
 
                 if not os.path.exists("downloads"):
@@ -629,7 +631,8 @@ def receive_messages(listening_socket):
                 with open(os.path.join("downloads", f"recv_{file_name}"), "w") as f:
                     i = 0
                     while True:
-                        data = listening_socket.recv(1024).decode("utf-8")
+                        data = listening_socket.recv(1024)
+                        data = window.encryptor.decrypt(file_name)
                         if data.encode("utf-8")[-5:] == b"<END>":
                             f.write(data[:-5])
                             break
