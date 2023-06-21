@@ -532,14 +532,14 @@ def receive_messages(client_socket, window: AppWindow):
     while True:
         try:
             # CBC
-            ciphertext = client_socket.recv(4096)
+            ciphertext = client_socket.recv(1024)
             # Generate the same key used by the server
 
             # message = decrypt_cbc(key, ciphertext).decode('utf-8')
             # ECB
             message = window.encryptor.decrypt(ciphertext)
 
-            #window.create_popup("Message received!", message, "ok").exec()
+            window.create_popup("Message received!", message, "ok").exec()
 
             print(message)
         except:
