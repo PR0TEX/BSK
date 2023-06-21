@@ -580,8 +580,9 @@ class AppWindow(QMainWindow):
                     # progress bar update here
 
             print("sent", i, "packets")
-        except:
+        except Exception as error:
             print("There was an error while sending the file")
+            print(error)
             self.logout_button.click()
 
 
@@ -634,8 +635,9 @@ def receive_messages(listening_socket):
                 window.create_popup("Message received!", message.decode("utf-8"), "ok").exec()
 
                 print(message)
-        except:
-            print('An error occurred while receiving messages.')
+        except Exception as error:
+            print("There was an error while receiving messages")
+            print(error)
             window.logout_button.click()
             break
 
