@@ -281,7 +281,7 @@ class AppWindow(QMainWindow):
 
         def logout():
             try:
-                self.sending_socket.send(b"<ENDCHAT>")
+                self.sending_socket.send(self.encryptor.encrypt(b"<ENDCHAT>"))
             except:
                 pass
 
@@ -549,9 +549,9 @@ class AppWindow(QMainWindow):
             print("sending file...")
             file_name = file.split("/")[-1]
             # file = open(file_name, "rb")
-            file_size = os.path.getsize(file_name)
+            file_size = os.path.getsize(file)
 
-            self.sending_socket.send(b"<FILE>")
+            self.sending_socket.send(self.encryptor.encrypt(b"<FILE>"))
 
             self.sending_socket.send(file_name.encode("utf-8"))
             self.sending_socket.send(str(file_size).encode("utf-8"))
