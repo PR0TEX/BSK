@@ -487,7 +487,7 @@ class AppWindow(QMainWindow):
                 self.my_socket.send(data)
                 i += 1
 
-                window.progressBar.setValue(i / (file_size / 1024) * 100)
+                window.progressBar.setValue(math.ceil(i / (file_size / 1024) * 100))
                 # progress bar update here
 
         print("sent", i, "packets")
@@ -511,7 +511,7 @@ def receive_file(client_socket, window: AppWindow):
                 break
             f.write(data)
             i += 1
-            window.progressBar.setValue(i / (file_size / 1024) * 100)
+            window.progressBar.setValue(math.ceil(i / (file_size / 1024) * 100))
             # sleep(1)
 
     print("done")
