@@ -443,7 +443,7 @@ class AppWindow(QMainWindow):
         file_size = os.path.getsize(file_name)
 
         # send file name
-        self.my_socket.send("newfile.txt".encode("utf-8"))
+        self.my_socket.send(file_name.split("/")[-1].encode("utf-8"))
         # send file size
         self.my_socket.send(str(file_size).encode("utf-8"))
 
@@ -453,10 +453,11 @@ class AppWindow(QMainWindow):
             while True:
                 data = f.read()
                 if not data:
+                    self.my_socket.send(b"<END>")
                     break
 
-                self.my_socket.send(data.encode("utf-8"))
-                sleep(1)
+                self.my_socket.send(data)
+                #sleep(1)
         # self.my_socket.sendall(b"<END>")
 
         # file.close()
@@ -475,10 +476,14 @@ def receive_file(client_socket):
     with open(f"recv_{file_name}", "w") as f:
         while True:
             data = client_socket.recv(1024).decode("utf-8")
-            if not data:
+            if data.encode("utf-8") == b"<END>":
                 break
             f.write(data)
-            sleep(1)
+            #sleep(1)
+
+
+
+
     # done = Falsex
     #
     # while not done:
