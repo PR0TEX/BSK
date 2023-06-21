@@ -621,7 +621,7 @@ def receive_messages(listening_socket):
                             break
                         f.write(data.decode("utf-8"))
                         i += 1
-                        window.progressBar.setValue(math.ceil(i / (file_size / 1024) * 100))
+                        window.progressBar.setValue(math.ceil(i / (int(file_size) / 1024) * 100))
                         # sleep(1)
 
                 print("file received")
