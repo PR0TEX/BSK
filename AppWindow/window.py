@@ -459,8 +459,8 @@ class AppWindow(QMainWindow):
 
             # self.sess_key = client_socket.recv(1024)
             print("Received session key:", self.sess_key)
-            # TODO encrypt
-            self.encoding_mode = client_socket.recv(1024).decode('utf-8')
+            encrypted_encoding_mode = client_socket.recv(1024)
+            self.encoding_mode = self.rsa_keys.decrypt_rsa(encrypted_encoding_mode, self.rsa_keys.private_key).decode('utf-8')
             print("Received encoding mode:", self.encoding_mode)
 
             self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
@@ -513,12 +513,9 @@ class AppWindow(QMainWindow):
         # send encrypted session key
         self.listening_socket.sendall(encrypted_sess_key)
 
-
-        # self.sess_key = os.urandom(16)
-        #
-        # self.listening_socket.sendall(self.sess_key)
         print("Sending session key:", self.sess_key)
-        self.listening_socket.sendall(self.encoding_mode.encode('utf-8'))
+        encrypted_encoding_mode = self.rsa_keys.encrypt_rsa(self.encoding_mode, partner_public_key)
+        self.listening_socket.sendall(encrypted_encoding_mode)
         print("Sending encoding mode:", self.encoding_mode)
 
         self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
