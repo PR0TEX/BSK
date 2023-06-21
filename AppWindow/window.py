@@ -427,8 +427,13 @@ class AppWindow(QMainWindow):
 
             self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
             self.sending_socket = client_socket
-            self.listening_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.listening_socket.bind((ip, 12346))
+
+            server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            server_socket.bind((host, 12345))
+            server_socket.listen(1)
+            client_socket, client_address = server_socket.accept()
+
+            self.listening_socket = client_socket
 
             receive_thread = Thread(target=receive_messages, args=(self.listening_socket, self,))
             # receive_thread = Thread(target=receive_file, args=(client_socket, self))
@@ -459,7 +464,6 @@ class AppWindow(QMainWindow):
 
         self.listening_socket = client_socket
         self.listening_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sending_socket.bind((self.partner_ip, 12345))
 
         self.encoding_mode = encoding
         self.sess_key = os.urandom(16)
@@ -470,6 +474,10 @@ class AppWindow(QMainWindow):
         print("Sending encoding mode:", self.encoding_mode)
 
         self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
+
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket.connect((client_address[0], 12345))
+        self.sending_socket = client_socket
 
         self.receive_thread = Thread(target=receive_messages, args=(self.listening_socket, self,))
         #receive_thread = Thread(target=receive_file, args=(client_socket, self))
