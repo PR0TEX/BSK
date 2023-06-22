@@ -61,12 +61,12 @@ class AESCipher:
         self.mode = mode
         self.iv = iv
 
-    def encrypt(self, data):
+    def encrypt(self, data, encoding="utf-8"):
         if self.mode == "CBC":
             self.cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
-            cipher_data = b64encode(self.iv + self.cipher.encrypt(pad(data.encode('utf-8'), AES.block_size)))
+            cipher_data = b64encode(self.iv + self.cipher.encrypt(pad(data.encode(encoding), AES.block_size)))
         elif self.mode == "ECB":
-            data = pad(data.encode('utf-8'), AES.block_size)
+            data = pad(data.encode(encoding), AES.block_size)
             cipher = AES.new(self.key, AES.MODE_ECB)
             cipher_data = base64.b64encode(cipher.encrypt(data))
         else:
@@ -563,7 +563,7 @@ class AppWindow(QMainWindow):
                     try:
                         encrypted_data = self.encryptor.encrypt(data.decode("utf-8"))
                     except:
-                        encrypted_data = self.encryptor.encrypt(data.decode("latin-1"))
+                        encrypted_data = self.encryptor.encrypt(data.decode("latin-1"), "latin-1")
 
                     encrypted_data = struct.pack('>I', len(encrypted_data)) + encrypted_data
                     self.sending_socket.send(encrypted_data)
@@ -590,7 +590,7 @@ def recv_msg(sock, encryptor):
         return None
     msglen = struct.unpack('>I', raw_msglen)[0]
     # Read the message data
-    return recvall(sock, msglen, encryptor)
+    return recvall(sock, msglen, encryptor, False)
 
 
 def recvall(sock, n, encryptor, read_len=False):
