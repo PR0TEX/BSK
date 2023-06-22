@@ -559,9 +559,9 @@ class AppWindow(QMainWindow):
             self.sending_socket.send(self.encryptor.encrypt(b"<FILE>".decode("utf-8")))
 
             self.sending_socket.send(self.encryptor.encrypt(file_name))
-            sleep(1)
+            #sleep(1)
             self.sending_socket.send(self.encryptor.encrypt(str(file_size)))
-            sleep(1)
+            #sleep(1)
 
             print("will send", math.ceil(file_size / 1024), "packets")
             i = 0
@@ -582,7 +582,6 @@ class AppWindow(QMainWindow):
         except Exception as error:
             print("There was an error while sending the file")
             self.logout_button.click()
-
 
 
 
