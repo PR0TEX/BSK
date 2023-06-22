@@ -460,7 +460,7 @@ class AppWindow(QMainWindow):
             self.partner_ip = ip
 
             # RSA
-            client_socket.sendall(self.rsa_keys.public_key)
+            client_socket.send(self.rsa_keys.public_key)
             print("Sending public key")
 
             encrypted_sess_key = client_socket.recv(1024)
@@ -521,14 +521,14 @@ class AppWindow(QMainWindow):
         # encrypt session key with peer's public key
         encrypted_sess_key = self.rsa_keys.encrypt_rsa(self.sess_key, partner_public_key)
         # send encrypted session key
-        self.listening_socket.sendall(encrypted_sess_key)
+        self.listening_socket.send(encrypted_sess_key)
 
 
         # self.sess_key = os.urandom(16)
         #
-        # self.listening_socket.sendall(self.sess_key)
+        # self.listening_socket.send(self.sess_key)
         print("Sending session key:", self.sess_key)
-        self.listening_socket.sendall(self.encoding_mode.encode('utf-8'))
+        self.listening_socket.send(self.encoding_mode.encode('utf-8'))
         print("Sending encoding mode:", self.encoding_mode)
 
         self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
@@ -544,7 +544,7 @@ class AppWindow(QMainWindow):
     def send_message(self, content):
         # Send message here
         try:
-            self.sending_socket.sendall(self.encryptor.encrypt(content))
+            self.sending_socket.send(self.encryptor.encrypt(content))
         except:
             print('An error occurred while sending the message.')
             self.logout_button.click()
