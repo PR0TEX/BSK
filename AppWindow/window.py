@@ -595,10 +595,11 @@ def receive_messages(listening_socket):
                 if not os.path.exists("downloads"):
                     os.makedirs("downloads")
 
-
+                received_ammount = 0
                 with open(os.path.join("downloads", f"recv_{file_name}"), "wb") as f:
                     while True:
                         data = listening_socket.recv(1024 * 4 * 2)
+                        received_ammount += len(data)
                         #data = window.encryptor.decrypt(data)
                         if data[-5:] == b"<END>":
                             f.write(data[:-5])
@@ -606,7 +607,7 @@ def receive_messages(listening_socket):
                             break
                         f.write(data)
                         i += 1
-                        window.progressBar.setValue(math.ceil(i / (int(file_size) / (1024 * 4)) * 100))
+                        window.progressBar.setValue(math.ceil(received_ammount / (int(file_size)) * 100))
 
 
                 # print("file received")
