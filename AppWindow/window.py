@@ -567,7 +567,7 @@ class AppWindow(QMainWindow):
 
                     encrypted_data = struct.pack('>I', len(encrypted_data)) + encrypted_data
                     self.sending_socket.send(encrypted_data)
-
+                    #sleep(1/100)
                     i += 1
                     window.progressBar.setValue(math.ceil(i / (file_size / (1024 * 4)) * 100))
 
@@ -626,7 +626,7 @@ def receive_messages(listening_socket):
                 received_amount = 0
                 with open(os.path.join("downloads", f"recv_{file_name}"), "wb") as f:
                     while True:
-                        data = recv_msg(listening_socket, window.encryptor)
+                        data = recv_msg(listening_socket)
                         data = window.encryptor.decrypt(data)
                         received_amount += len(data)
                         if data[-5:] == b"<END>":
