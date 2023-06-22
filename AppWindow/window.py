@@ -583,7 +583,7 @@ def recv_msg(sock, encryptor):
         return None
     msglen = struct.unpack('>I', raw_msglen)[0]
     # Read the message data
-    return recvall(sock, msglen)
+    return recvall(sock, msglen, encryptor)
 
 def recvall(sock, n, encryptor):
     # Helper function to recv n bytes or return None if EOF is hit
