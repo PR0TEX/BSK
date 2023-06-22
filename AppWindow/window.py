@@ -614,7 +614,6 @@ def receive_messages(listening_socket):
 
 
                 with open(os.path.join("downloads", f"recv_{file_name}"), "w") as f:
-                    listening_socket.settimeout(0.5)
                     while True:
                         data = listening_socket.recv(1024 * 4 * 2)
                         data = window.encryptor.decrypt(data)
@@ -624,9 +623,6 @@ def receive_messages(listening_socket):
                         f.write(data.decode("utf-8"))
                         i += 1
                         window.progressBar.setValue(math.ceil(i / (int(file_size) / (1024 * 4)) * 100))
-
-
-
 
 
                 print("file received")
