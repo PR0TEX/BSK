@@ -286,8 +286,9 @@ class AppWindow(QMainWindow):
 
         def logout():
             try:
-                self.sending_socket.send(self.encryptor.encrypt(b"<ENDCHAT>"))
-            except:
+                self.sending_socket.send(self.encryptor.encrypt(b"<ENDCHAT>".decode("utf-8")))
+            except Exception as error:
+                print(error)
                 pass
 
             self.listening_socket.close()
@@ -624,7 +625,7 @@ def receive_messages(listening_socket):
                 #window.create_popup("File received!", "Received "+file_name, "ok").exec()
 
             elif message == b"<ENDCHAT>":
-                window.create_popup("Disconnecting", "Lost connection with partner", "ok").exec()
+                window.create_popup("Disconnecting", "Lost connection with partner", "ok").show()
                 window.logout_button.click()
                 return
             else:
