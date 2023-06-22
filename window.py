@@ -11,7 +11,7 @@ from PyQt5.QtCore import Qt
 
 from threading import Thread
 
-from AppWindow.dialogs import CustomDialog
+from dialogs import CustomDialog
 from utils import is_valid_ip, get_own_ip
 
 from hashlib import md5
