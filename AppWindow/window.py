@@ -2,8 +2,6 @@ import socket
 import base64
 import os
 import math
-import struct
-
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QLineEdit, QPushButton, QRadioButton, QDialog, \
     QFileDialog, QProgressBar
 from PyQt5.QtGui import QIcon, QFont
@@ -551,18 +549,14 @@ class AppWindow(QMainWindow):
             print("will send", math.ceil(file_size / (1024 * 4)), "packets")
             with open(file, "rb") as f:
                 while True:
-                    data = f.read(1024 * 4)
+                    data = f.read(1024 * 16)
                     if not data:
-                        msg = self.encryptor.encrypt(b"<END>".decode("utf-8"))
-                        msg = struct.pack('>I', len(msg)) + msg
-                        self.sending_socket.send(msg)
+                        self.sending_socket.send(self.encryptor.encrypt(b"<END>".decode("utf-8")))
                         break
 
-                    msg = self.encryptor.encrypt(data.decode("utf-8"))
-                    msg = struct.pack('>I', len(msg)) + msg
-                    self.sending_socket.send(msg)
+                    self.sending_socket.send(self.encryptor.encrypt(data.decode("utf-8")))
                     i += 1
-                    #sleep(5/1000)
+                    sleep(5/1000)
                     window.progressBar.setValue(math.ceil(i / (file_size / (1024 * 4)) * 100))
 
             print("sent", i, "packets")
@@ -570,32 +564,12 @@ class AppWindow(QMainWindow):
         except Exception as error:
             # print(i)
             print("There was an error while sending the file")
-            print(error)
+            # print(error)
             self.logout_button.click()
         finally:
             self.setWindowTitle("Connected to: "+self.partner_ip+" -- file sent!")
 
 
-def recv_msg(sock, encryptor):
-    # Read message length and unpack it into an integer
-    raw_msglen = recvall(sock, 4, encryptor, read_len=True)
-    if not raw_msglen:
-        return None
-    msglen = struct.unpack('>I', raw_msglen)[0]
-    # Read the message data
-    return recvall(sock, msglen, encryptor)
-
-def recvall(sock, n, encryptor, read_len=False):
-    # Helper function to recv n bytes or return None if EOF is hit
-    data = bytearray()
-    while len(data) < n:
-        packet = sock.recv(n - len(data))
-        if not packet:
-            return None
-        if not read_len:
-            packet = encryptor.decrypt(packet)
-        data.extend(packet)
-    return data
 
 def receive_messages(listening_socket):
     global window
@@ -621,7 +595,8 @@ def receive_messages(listening_socket):
 
                 with open(os.path.join("downloads", f"recv_{file_name}"), "w") as f:
                     while True:
-                        data = recv_msg(listening_socket, window.encryptor)
+                        data = listening_socket.recv(1024 * 16 * 2)
+                        data = window.encryptor.decrypt(data)
                         if data[-5:] == b"<END>":
                             f.write(data[:-5].decode("utf-8"))
                             break
@@ -640,7 +615,7 @@ def receive_messages(listening_socket):
                 # print(message)
         except Exception as error:
             # print("There was an error while receiving messages")
-            print(error)
+            # print(error)
             # print(i)
             window.logout_button.click()
             break
