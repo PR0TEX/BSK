@@ -454,16 +454,16 @@ class AppWindow(QMainWindow):
             client_socket.sendall(self.rsa_keys.public_key)
             print("Sending public key")
 
-            encrypted_sess_key = client_socket.recv(1024)
+            encrypted_sess_key = client_socket.recv(128)
             self.sess_key = self.rsa_keys.decrypt_rsa(encrypted_sess_key, self.rsa_keys.private_key)
             # self.sess_key = client_socket.recv(1024)
             print("Received session key:", self.sess_key)
 
-            encrypted_encoding_mode = client_socket.recv(1024)
+            encrypted_encoding_mode = client_socket.recv(128)
             self.encoding_mode = self.rsa_keys.decrypt_rsa(encrypted_encoding_mode, self.rsa_keys.private_key).decode('utf-8')
             print("Received encoding mode:", self.encoding_mode)
 
-            encrypted_iv = client_socket.recv(1024)
+            encrypted_iv = client_socket.recv(128)
             self.iv = self.rsa_keys.decrypt_rsa(encrypted_iv, self.rsa_keys.private_key)
             print("Received iv:", self.iv)
 
