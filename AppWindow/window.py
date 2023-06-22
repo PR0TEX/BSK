@@ -548,10 +548,10 @@ class AppWindow(QMainWindow):
             self.sending_socket.send(self.encryptor.encrypt(str(file_size)))
             sleep(0.1)
             self.setWindowTitle(self.windowTitle() + " -- sending file "+file_name+"...")
-            print("will send", math.ceil(file_size / (1024 * 4)), "packets")
+            print("will send", math.ceil(file_size / (1024)), "packets")
             with open(file, "rb") as f:
                 while True:
-                    data = f.read(1024 * 4)
+                    data = f.read(1024)
                     if not data:
                         encrypted_data = self.encryptor.encrypt(b"<END>".decode("utf-8"))
                         encrypted_data = struct.pack('>I', len(encrypted_data)) + encrypted_data
@@ -569,7 +569,6 @@ class AppWindow(QMainWindow):
                     self.sending_socket.send(encrypted_data)
 
                     i += 1
-                    sleep(5/1000)
                     window.progressBar.setValue(math.ceil(i / (file_size / (1024 * 4)) * 100))
 
             print("sent", i, "packets")
@@ -583,31 +582,23 @@ class AppWindow(QMainWindow):
             self.setWindowTitle("Connected to: "+self.partner_ip+" -- file sent!")
 
 
-def recv_msg(sock, encryptor):
+def recv_msg(sock):
     # Read message length and unpack it into an integer
-    raw_msglen = recvall(sock, 4, encryptor, True)
+    raw_msglen = recvall(sock, 4)
     if not raw_msglen:
         return None
     msglen = struct.unpack('>I', raw_msglen)[0]
     # Read the message data
-    return recvall(sock, msglen, encryptor, False)
+    return recvall(sock, msglen)
 
 
-def recvall(sock, n, encryptor, read_len=False):
+def recvall(sock, n):
     # Helper function to recv n bytes or return None if EOF is hit
     data = bytearray()
-    received_len = 0
-    while received_len < n:
-        if read_len:
-            packet = sock.recv(n - len(data))
-            received_len += len(packet)
-        else:
-            packet = sock.recv(n - len(data))
-            received_len += len(packet)
-            packet = encryptor.decrypt(packet)
+    while len(data) < n:
+        packet = sock.recv(n - len(data))
         if not packet:
             return None
-
         data.extend(packet)
     return data
 
@@ -632,19 +623,19 @@ def receive_messages(listening_socket):
                 if not os.path.exists("downloads"):
                     os.makedirs("downloads")
 
-                received_ammount = 0
+                received_amount = 0
                 with open(os.path.join("downloads", f"recv_{file_name}"), "wb") as f:
                     while True:
                         data = recv_msg(listening_socket, window.encryptor)
-                        received_ammount += len(data)
-                        #data = window.encryptor.decrypt(data)
+                        data = window.encryptor.decrypt(data)
+                        received_amount += len(data)
                         if data[-5:] == b"<END>":
                             f.write(data[:-5])
                             window.progressBar.setValue(100)
                             break
                         f.write(data)
                         i += 1
-                        window.progressBar.setValue(math.ceil(received_ammount / (int(file_size)) * 100))
+                        window.progressBar.setValue(math.ceil(received_amount / (int(file_size)) * 100))
 
 
                 # print("file received")
