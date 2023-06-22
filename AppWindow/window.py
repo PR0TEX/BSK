@@ -55,7 +55,7 @@ class RSAkeys:
 
 class AESCipher:
     def __init__(self, key, mode):
-        self.key = md5(key.encode('utf8')).digest()
+        self.key = key
         self.mode = mode
         self.block_size = 32
 
@@ -65,7 +65,7 @@ class AESCipher:
             self.cipher = AES.new(self.key, AES.MODE_CBC, iv)
             cipher_data = b64encode(iv + self.cipher.encrypt(pad(data.encode('utf-8'), self.block_size)))
         elif self.mode == "ECB":
-            data = pad(data.encode(), self.block_size)
+            data = pad(data.encode('utf-8'), self.block_size)
             cipher = AES.new(self.key, AES.MODE_ECB)
             cipher_data = base64.b64encode(cipher.encrypt(data))
         else:
