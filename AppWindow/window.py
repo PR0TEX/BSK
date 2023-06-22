@@ -618,12 +618,12 @@ def receive_messages(listening_socket):
                     listening_socket.settimeout(0.5)
                     while True:
                         data = listening_socket.recv(1024 * 4 * 2)
-                        data = window.encryptor.decrypt(data)
+                        #data = window.encryptor.decrypt(data)
                         arr.append(data)
                         if data[-5:] == b"<END>":
-                            f.write(data[:-5].decode("utf-8"))
+                            #f.write(data[:-5].decode("utf-8"))
                             break
-                        f.write(data.decode("utf-8"))
+                        #f.write(data.decode("utf-8"))
                         i += 1
                         window.progressBar.setValue(math.ceil(i / (int(file_size) / (1024 * 4)) * 100))
 
