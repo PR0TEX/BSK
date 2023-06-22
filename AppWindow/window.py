@@ -346,7 +346,6 @@ class AppWindow(QMainWindow):
                 return
 
             message_content = message_field.text()
-            encoding = "ECB" if ecb_radio.isChecked() else "CBC"
 
             if message_content == "":
                 dlg = CustomDialog()
@@ -354,7 +353,7 @@ class AppWindow(QMainWindow):
                 dlg.exec()
             else:
                 dlg = CustomDialog(dialog_type="yes_no")
-                dlg.set_message("Encoding: " + encoding + "\tReceiver: " + self.partner_ip)
+                dlg.set_message("Encoding: " + self.encoding_mode + "\tReceiver: " + self.partner_ip)
                 dlg.set_title("Send message?")
 
                 if dlg.exec():
@@ -372,7 +371,6 @@ class AppWindow(QMainWindow):
                 return
 
             message_content = message_field.text()
-            encoding = "ECB" if ecb_radio.isChecked() else "CBC"
 
             if message_content == "":
                 dlg = CustomDialog()
@@ -380,7 +378,7 @@ class AppWindow(QMainWindow):
                 dlg.exec()
             else:
                 dlg = CustomDialog(dialog_type="yes_no")
-                dlg.set_message("Encoding: " + encoding + "\tReceiver: " + self.partner_ip)
+                dlg.set_message("Encoding: " + self.encoding_mode + "\tReceiver: " + self.partner_ip)
                 dlg.set_title("Send file?")
 
                 if dlg.exec():
