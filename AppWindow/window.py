@@ -570,7 +570,7 @@ class AppWindow(QMainWindow):
         except Exception as error:
             # print(i)
             print("There was an error while sending the file")
-            # print(error)
+            print(error)
             self.logout_button.click()
         finally:
             self.setWindowTitle("Connected to: "+self.partner_ip+" -- file sent!")
@@ -620,7 +620,7 @@ def receive_messages(listening_socket):
 
                 with open(os.path.join("downloads", f"recv_{file_name}"), "w") as f:
                     while True:
-                        data = recv_msg(listening_socket)
+                        data = recv_msg(listening_socket, window.encryptor)
                         if data[-5:] == b"<END>":
                             f.write(data[:-5].decode("utf-8"))
                             break
@@ -639,7 +639,7 @@ def receive_messages(listening_socket):
                 # print(message)
         except Exception as error:
             # print("There was an error while receiving messages")
-            # print(error)
+            print(error)
             # print(i)
             window.logout_button.click()
             break
