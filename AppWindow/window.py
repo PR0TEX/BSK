@@ -574,7 +574,7 @@ class AppWindow(QMainWindow):
                     self.sending_socket.send(self.encryptor.encrypt(data.decode("utf-8")))
                     i += 1
 
-                    #sleep(1/1000)
+                    sleep(1/1000)
 
                     window.progressBar.setValue(math.ceil(i / (file_size / (1024 * 4)) * 100))
 
@@ -612,27 +612,19 @@ def receive_messages(listening_socket):
                 if not os.path.exists("downloads"):
                     os.makedirs("downloads")
 
-                arr = []
 
                 with open(os.path.join("downloads", f"recv_{file_name}"), "w") as f:
                     listening_socket.settimeout(0.5)
                     while True:
                         data = listening_socket.recv(1024 * 4 * 2)
-                        #data = window.encryptor.decrypt(data)
-                        arr.append(data)
+                        data = window.encryptor.decrypt(data)
                         if data[-5:] == b"<END>":
-                            #f.write(data[:-5].decode("utf-8"))
+                            f.write(data[:-5].decode("utf-8"))
                             break
-                        #f.write(data.decode("utf-8"))
+                        f.write(data.decode("utf-8"))
                         i += 1
                         window.progressBar.setValue(math.ceil(i / (int(file_size) / (1024 * 4)) * 100))
 
-                    i = 0
-                    for elem in arr:
-                        i += 1
-                        data = window.encryptor.decrypt(elem)
-                        f.write(data.decode("utf-8") if not data[-5:] == b"<END>" else data[:-5].decode("utf-8"))
-                        window.progressBar.setValue(math.ceil((i / len(arr)) * 100))
 
 
 
@@ -643,9 +635,10 @@ def receive_messages(listening_socket):
             elif message == b"<ENDCHAT>":
                 #window.create_popup("Disconnecting", "Lost connection with partner", "ok")
                 window.logout_button.click()
+                #window.setWindowTitle("Partner disconnected")
                 return
             else:
-                #window.create_popup("Message received!", message.decode("utf-8"), "ok").exec()
+                window.create_popup("Message received!", message.decode("utf-8"), "ok").exec()
 
                 print(message)
         except Exception as error:
