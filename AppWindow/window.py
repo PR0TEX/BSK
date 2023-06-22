@@ -593,6 +593,7 @@ class AppWindow(QMainWindow):
 def receive_messages(listening_socket):
     global window
     while True:
+        i = 0
         try:
             # CBC
             ciphertext = listening_socket.recv(1024)
@@ -614,7 +615,7 @@ def receive_messages(listening_socket):
                     os.makedirs("downloads")
 
                 with open(os.path.join("downloads", f"recv_{file_name}"), "w") as f:
-                    i = 0
+
                     while True:
                         data = listening_socket.recv(1024)
                         data = window.encryptor.decrypt(data)
