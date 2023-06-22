@@ -2,6 +2,8 @@ import socket
 import base64
 import os
 import math
+import struct
+
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QLineEdit, QPushButton, QRadioButton, QDialog, \
     QFileDialog, QProgressBar
 from PyQt5.QtGui import QIcon, QFont
@@ -551,12 +553,16 @@ class AppWindow(QMainWindow):
                 while True:
                     data = f.read(1024 * 4)
                     if not data:
-                        self.sending_socket.send(self.encryptor.encrypt(b"<END>".decode("utf-8")))
+                        msg = self.encryptor.encrypt(b"<END>".decode("utf-8"))
+                        msg = struct.pack('>I', len(msg)) + msg
+                        self.sending_socket.send(msg)
                         break
 
-                    self.sending_socket.send(self.encryptor.encrypt(data.decode("utf-8")))
+                    msg = self.encryptor.encrypt(data.decode("utf-8"))
+                    msg = struct.pack('>I', len(msg)) + msg
+                    self.sending_socket.send(msg)
                     i += 1
-                    sleep(5/1000)
+                    #sleep(5/1000)
                     window.progressBar.setValue(math.ceil(i / (file_size / (1024 * 4)) * 100))
 
             print("sent", i, "packets")
@@ -570,6 +576,25 @@ class AppWindow(QMainWindow):
             self.setWindowTitle("Connected to: "+self.partner_ip+" -- file sent!")
 
 
+def recv_msg(sock, encryptor):
+    # Read message length and unpack it into an integer
+    raw_msglen = recvall(sock, 4)
+    if not raw_msglen:
+        return None
+    msglen = struct.unpack('>I', raw_msglen)[0]
+    # Read the message data
+    return recvall(sock, msglen)
+
+def recvall(sock, n, encryptor):
+    # Helper function to recv n bytes or return None if EOF is hit
+    data = bytearray()
+    while len(data) < n:
+        packet = sock.recv(n - len(data))
+        packet = encryptor.decrypt(packet)
+        if not packet:
+            return None
+        data.extend(packet)
+    return data
 
 def receive_messages(listening_socket):
     global window
@@ -595,8 +620,7 @@ def receive_messages(listening_socket):
 
                 with open(os.path.join("downloads", f"recv_{file_name}"), "w") as f:
                     while True:
-                        data = listening_socket.recv(1024 * 4 * 2)
-                        data = window.encryptor.decrypt(data)
+                        data = recv_msg(listening_socket)
                         if data[-5:] == b"<END>":
                             f.write(data[:-5].decode("utf-8"))
                             break
