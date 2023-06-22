@@ -552,7 +552,7 @@ class AppWindow(QMainWindow):
         print("sending file...")
         file_name = file.split("/")[-1]
         # file = open(file_name, "rb")
-        file_size = os.path.getsize(file_name)
+        file_size = os.path.getsize(file)
 
         self.sending_socket.send(file_name.encode("utf-8"))
         self.sending_socket.send(str(file_size).encode("utf-8"))
@@ -561,7 +561,7 @@ class AppWindow(QMainWindow):
 
         print("will send", math.ceil(file_size / 1024), "packets")
         i = 0
-        with open(file_name, "rb") as f:
+        with open(file, "rb") as f:
             while True:
                 data = f.read(1024)
                 if not data:
