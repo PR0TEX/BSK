@@ -447,7 +447,7 @@ class AppWindow(QMainWindow):
         dlg = CustomDialog(dialog_type=mode) if mode else CustomDialog()
         dlg.set_message(message)
         dlg.set_title(title)
-        return
+        return dlg
 
 
     def connect_to_room(self, ip):
