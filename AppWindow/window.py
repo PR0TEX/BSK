@@ -599,10 +599,10 @@ def receive_messages(listening_socket):
                         data = listening_socket.recv(1024 * 4 * 2)
                         data = window.encryptor.decrypt(data)
                         if data[-5:] == b"<END>":
-                            f.write(data[:-5].decode("utf-8"))
+                            f.write(data[:-5])
                             window.progressBar.setValue(100)
                             break
-                        f.write(data.decode("utf-8"))
+                        f.write(data)
                         i += 1
                         window.progressBar.setValue(math.ceil(i / (int(file_size) / (1024 * 4)) * 100))
 
