@@ -547,6 +547,7 @@ class AppWindow(QMainWindow):
         # Send message here
         try:
             self.sending_socket.send(self.encryptor.encrypt(content))
+            self.setWindowTitle(self.windowTitle()+" -- Message sent!")
         except:
             print('An error occurred while sending the message.')
             self.logout_button.click()
@@ -640,7 +641,8 @@ def receive_messages(listening_socket):
                 window.logout_button.click()
                 return
             else:
-                window.create_popup("Message received!", message.decode("utf-8"), "ok").exec()
+                #window.create_popup("Message received!", message.decode("utf-8"), "ok").exec()
+                window.setWindowTitle("Connected to: " + window.partner_ip + " -- Message: " + message.decode("utf-8"))
 
                 print(message)
         except Exception as error:
