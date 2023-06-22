@@ -569,7 +569,7 @@ class AppWindow(QMainWindow):
                     self.sending_socket.send(encrypted_data)
 
                     i += 1
-                    #sleep(5/1000)
+                    sleep(5/1000)
                     window.progressBar.setValue(math.ceil(i / (file_size / (1024 * 4)) * 100))
 
             print("sent", i, "packets")
