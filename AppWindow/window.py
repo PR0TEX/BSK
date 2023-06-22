@@ -638,7 +638,6 @@ def receive_messages(listening_socket):
             elif message == b"<ENDCHAT>":
                 #window.create_popup("Disconnecting", "Lost connection with partner", "ok")
                 window.logout_button.click()
-                window.setWindowTitle("Partner disconnected")
                 return
             else:
                 window.create_popup("Message received!", message.decode("utf-8"), "ok").exec()
