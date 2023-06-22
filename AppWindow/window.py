@@ -560,7 +560,11 @@ class AppWindow(QMainWindow):
                         window.progressBar.setValue(100)
                         break
 
-                    encrypted_data = self.encryptor.encrypt(data.decode("utf-8"))
+                    try:
+                        encrypted_data = self.encryptor.encrypt(data.decode("utf-8"))
+                    except:
+                        encrypted_data = self.encryptor.encrypt(data.decode("latin-1"))
+
                     encrypted_data = struct.pack('>I', len(encrypted_data)) + encrypted_data
                     self.sending_socket.send(encrypted_data)
 
