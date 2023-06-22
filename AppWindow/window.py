@@ -577,7 +577,7 @@ class AppWindow(QMainWindow):
                     self.sending_socket.send(self.encryptor.encrypt(data.decode("utf-8")))
                     i += 1
 
-                    sleep(1/1000)
+                    #sleep(1/1000)
 
 
                     window.progressBar.setValue(math.ceil(i / (file_size / (1024 * 4)) * 100))
