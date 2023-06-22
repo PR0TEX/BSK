@@ -89,7 +89,6 @@ class AESCipher:
 
 class AppWindow(QMainWindow):
     def __init__(self):
-        # each app should have a socket bound to it. It will be used in threads to listen for incoming messages.
         self.listening_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sending_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -247,9 +246,7 @@ class AppWindow(QMainWindow):
             pass
 
         def show_login_gui():
-            # hide all visible widgets and unhide all widgets for the login screen
-            # remove partner's ip address
-            #self.partner_ip = ""
+            self.partner_ip = ""
             label.show()
             key_field.show()
             create_room_button.show()
@@ -408,7 +405,7 @@ class AppWindow(QMainWindow):
 
         def create_room_button_pressed():
             self.encoding_mode = "ECB" if ecb_radio.isChecked() else "CBC"
-            self.create_room(encoding = "ECB" if ecb_radio.isChecked() else "CBC")
+            self.create_room()
             show_user_logged_in_gui()
 
 
@@ -481,7 +478,7 @@ class AppWindow(QMainWindow):
 
         return True
 
-    def create_room(self, encoding):
+    def create_room(self):
         host = ''
         port = 12346
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -530,7 +527,7 @@ class AppWindow(QMainWindow):
             self.sending_socket.send(self.encryptor.encrypt(content))
             self.setWindowTitle(self.windowTitle()+" -- Message sent!")
         except:
-            # print('An error occurred while sending the message.')
+            print('An error occurred while sending the message.')
             self.logout_button.click()
 
     def send_file(self, file):
@@ -573,26 +570,22 @@ class AppWindow(QMainWindow):
             print("sent", i, "packets")
 
         except Exception as error:
-            # print(i)
             print("There was an error while sending the file")
-            # print(error)
             self.logout_button.click()
         finally:
             self.setWindowTitle("Connected to: "+self.partner_ip+" -- file sent!")
 
 
 def recv_msg(sock):
-    # Read message length and unpack it into an integer
     raw_msglen = recvall(sock, 4)
     if not raw_msglen:
         return None
     msglen = struct.unpack('>I', raw_msglen)[0]
-    # Read the message data
+
     return recvall(sock, msglen)
 
 
 def recvall(sock, n):
-    # Helper function to recv n bytes or return None if EOF is hit
     data = bytearray()
     while len(data) < n:
         packet = sock.recv(n - len(data))
@@ -612,10 +605,9 @@ def receive_messages(listening_socket):
             if message == b"<FILE>":
                 file_name = listening_socket.recv(1024)
                 file_name = window.encryptor.decrypt(file_name).decode("utf-8")
-                # print(file_name)
+
                 file_size = listening_socket.recv(1024)
                 file_size = window.encryptor.decrypt(file_size).decode("utf-8")
-                # print(file_size)
 
                 window.setWindowTitle(window.windowTitle() + " -- downloading file " + file_name + "...")
 
@@ -637,18 +629,13 @@ def receive_messages(listening_socket):
                         window.progressBar.setValue(math.ceil(received_amount / (int(file_size)) * 100))
 
 
-                # print("file received")
                 window.setWindowTitle("Connected to: " + window.partner_ip + " -- file received!")
             elif message == b"<ENDCHAT>":
                 window.logout_button.click()
                 return
             else:
                 window.setWindowTitle("Connected to: " + window.partner_ip + " -- Message: " + message.decode("utf-8"))
-                # print(message)
         except Exception as error:
-            # print("There was an error while receiving messages")
-            # print(error)
-            # print(i)
             window.logout_button.click()
             break
 
