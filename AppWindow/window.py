@@ -325,6 +325,7 @@ class AppWindow(QMainWindow):
 
             confirm_message_button.show()
             back_button.show()
+            self.setWindowTitle("Connected to: " + self.partner_ip)
 
         def show_send_file_gui():
             if self.partner_ip == "":
@@ -347,6 +348,7 @@ class AppWindow(QMainWindow):
 
             confirm_file_button.show()
             back_button.show()
+            self.setWindowTitle("Connected to: " + self.partner_ip)
 
         def show_file_selection_prompt():
             if select_file_prompt.exec():
@@ -557,11 +559,11 @@ class AppWindow(QMainWindow):
             file_size = os.path.getsize(file)
 
             self.sending_socket.send(self.encryptor.encrypt(b"<FILE>".decode("utf-8")))
-            sleep(1)
+            sleep(0.1)
             self.sending_socket.send(self.encryptor.encrypt(file_name))
-            sleep(1)
+            sleep(0.1)
             self.sending_socket.send(self.encryptor.encrypt(str(file_size)))
-
+            sleep(0.1)
             self.setWindowTitle(self.windowTitle() + " -- sending file "+file_name+"...")
             print("will send", math.ceil(file_size / (1024 * 4)), "packets")
             with open(file, "rb") as f:
@@ -574,7 +576,7 @@ class AppWindow(QMainWindow):
                     self.sending_socket.send(self.encryptor.encrypt(data.decode("utf-8")))
                     i += 1
 
-                    sleep(15/1000)
+                    sleep(5/1000)
 
                     window.progressBar.setValue(math.ceil(i / (file_size / (1024 * 4)) * 100))
 
@@ -585,8 +587,8 @@ class AppWindow(QMainWindow):
             print("There was an error while sending the file")
             print(error)
             self.logout_button.click()
-        # finally:
-        #     self.setWindowTitle("Connected to: "+self.partner_ip)
+        finally:
+            self.setWindowTitle("Connected to: "+self.partner_ip)
 
 
 
@@ -630,6 +632,7 @@ def receive_messages(listening_socket):
 
 
                 print("file received")
+                window.setWindowTitle("Connected to: " + window.partner_ip + " -- file received!")
                 #window.create_popup("File received!", "Received "+file_name, "ok").exec()
 
             elif message == b"<ENDCHAT>":
@@ -647,8 +650,7 @@ def receive_messages(listening_socket):
             print(i)
             window.logout_button.click()
             break
-        # finally:
-        #     window.setWindowTitle("Connected to: "+window.partner_ip)
+
 
 
 if __name__ == "__main__":
