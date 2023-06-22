@@ -552,6 +552,7 @@ class AppWindow(QMainWindow):
                     data = f.read(1024 * 4)
                     if not data:
                         self.sending_socket.send(b"<END>")
+                        window.progressBar.setValue(100)
                         break
 
                     self.sending_socket.send(data)
@@ -593,12 +594,13 @@ def receive_messages(listening_socket):
                     os.makedirs("downloads")
 
 
-                with open(os.path.join("downloads", f"recv_{file_name}"), "w") as f:
+                with open(os.path.join("downloads", f"recv_{file_name}"), "wb") as f:
                     while True:
                         data = listening_socket.recv(1024 * 4 * 2)
                         #data = window.encryptor.decrypt(data)
                         if data[-5:] == b"<END>":
                             f.write(data[:-5].decode("utf-8"))
+                            window.progressBar.setValue(100)
                             break
                         f.write(data.decode("utf-8"))
                         i += 1
