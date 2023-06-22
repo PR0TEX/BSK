@@ -439,26 +439,27 @@ class AppWindow(QMainWindow):
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             client_socket.connect((host, port))
-            # print('Connected to the server.')
+            print('Connected to ' + ip)
             self.setWindowTitle("Connected to: " + ip)
             self.partner_ip = ip
 
             # RSA
             client_socket.send(self.rsa_keys.public_key)
-            # print("Sending public key")
+            print("Sending public key")
 
             encrypted_sess_key = client_socket.recv(128)
             self.sess_key = self.rsa_keys.decrypt_rsa(encrypted_sess_key, self.rsa_keys.private_key)
-            # print("Received session key:", self.sess_key)
+            print("Received session key:", self.sess_key)
 
             encrypted_encoding_mode = client_socket.recv(128)
             self.encoding_mode = self.rsa_keys.decrypt_rsa(encrypted_encoding_mode, self.rsa_keys.private_key).decode(
                 'utf-8')
-            # print("Received encoding mode:", self.encoding_mode)
+            print("Received encoding mode:", self.encoding_mode)
 
             encrypted_iv = client_socket.recv(128)
             self.iv = self.rsa_keys.decrypt_rsa(encrypted_iv, self.rsa_keys.private_key)
-            # print("Received iv:", self.iv)
+            if self.encoding_mode == "CBC":
+                print("Received iv:", self.iv)
 
             self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode, self.iv)
             self.sending_socket = client_socket
@@ -475,7 +476,7 @@ class AppWindow(QMainWindow):
 
 
         except ConnectionRefusedError:
-            # print('Unable to connect to the server.')
+            print('Unable to connect to the server.')
             self.logout_button.click()
             return False
 
@@ -487,12 +488,12 @@ class AppWindow(QMainWindow):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.bind((host, port))
         server_socket.listen(1)
-        # print('Waiting for incoming connections...')
+        print('Waiting for incoming connections...')
 
         self.setWindowTitle("Waiting for somebody to connect...")
 
         client_socket, client_address = server_socket.accept()
-        # print('Connected to', client_address)
+        print('Connected to', client_address)
         self.setWindowTitle("Connected to: " + client_address[0])
         self.partner_ip = client_address[0]
 
@@ -503,16 +504,18 @@ class AppWindow(QMainWindow):
 
         encrypted_sess_key = self.rsa_keys.encrypt_rsa(self.sess_key, partner_public_key)
         self.listening_socket.send(encrypted_sess_key)
-        # print("Sending session key:", self.sess_key)
+        print("Sending session key:", self.sess_key)
 
         encrypted_encoding_mode = self.rsa_keys.encrypt_rsa(self.encoding_mode.encode('utf-8'), partner_public_key)
         self.listening_socket.send(encrypted_encoding_mode)
-        # print("Sending encoding mode:", self.encoding_mode)
+        print("Sending encoding mode:", self.encoding_mode)
         self.iv = get_random_bytes(AES.block_size)
 
         encrypted_iv = self.rsa_keys.encrypt_rsa(self.iv, partner_public_key)
         self.listening_socket.send(encrypted_iv)
-        # print("Sending iv vector:", self.iv)
+
+        if self.encoding_mode == "CBC":
+            print("Sending iv vector:", self.iv)
 
         self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode, self.iv)
 
@@ -534,7 +537,7 @@ class AppWindow(QMainWindow):
     def send_file(self, file):
         i = 0
         try:
-            # print("sending file...")
+            print("sending file...")
             file_name = file.split("/")[-1]
             file_size = os.path.getsize(file)
 
@@ -545,7 +548,7 @@ class AppWindow(QMainWindow):
             self.sending_socket.send(self.encryptor.encrypt(str(file_size)))
             sleep(0.1)
             self.setWindowTitle(self.windowTitle() + " -- sending file "+file_name+"...")
-            # print("will send", math.ceil(file_size / (1024 * 4)), "packets")
+            print("will send", math.ceil(file_size / (1024 * 4)), "packets")
             with open(file, "rb") as f:
                 while True:
                     data = f.read(1024 * 4)
@@ -558,11 +561,11 @@ class AppWindow(QMainWindow):
                     sleep(5/1000)
                     window.progressBar.setValue(math.ceil(i / (file_size / (1024 * 4)) * 100))
 
-            # print("sent", i, "packets")
+            print("sent", i, "packets")
 
         except Exception as error:
             # print(i)
-            # print("There was an error while sending the file")
+            print("There was an error while sending the file")
             # print(error)
             self.logout_button.click()
         finally:
