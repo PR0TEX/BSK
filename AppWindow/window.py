@@ -286,7 +286,7 @@ class AppWindow(QMainWindow):
             self.encoding_mode = "None"
             self.sess_key = ""
             self.iv = ""
-            self.rsa_keys = RSA(1024)
+            self.rsa_keys = RSAkeys(1024)
             self.encryptor = AESCipher(self.sess_key, self.encoding_mode, self.iv)
 
             show_login_gui()
@@ -390,7 +390,7 @@ class AppWindow(QMainWindow):
                     pass
 
         def connect_to_room_button_pressed():
-
+            self.encoding_mode = "ECB" if ecb_radio.isChecked() else "CBC"
             ip = key_field.text()
 
             if is_valid_ip(ip):
@@ -408,6 +408,7 @@ class AppWindow(QMainWindow):
                 dlg.exec()
 
         def create_room_button_pressed():
+            self.encoding_mode = "ECB" if ecb_radio.isChecked() else "CBC"
             self.create_room(encoding = "ECB" if ecb_radio.isChecked() else "CBC")
             show_user_logged_in_gui()
 
