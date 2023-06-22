@@ -55,33 +55,33 @@ class RSAkeys:
 
 class AESCipher:
     def __init__(self, key, mode):
-        self.key = key
+        self.key = md5(key.encode('utf8')).digest()
         self.mode = mode
         self.block_size = 32
 
     def encrypt(self, data):
+        key = 'abcdefghijklmnop'
         if self.mode == "CBC":
             iv = get_random_bytes(self.block_size)
             self.cipher = AES.new(self.key, AES.MODE_CBC, iv)
             cipher_data = b64encode(iv + self.cipher.encrypt(pad(data.encode('utf-8'), self.block_size)))
         elif self.mode == "ECB":
-            data = pad(data.encode('utf-8'), self.block_size)
-            cipher = AES.new(self.key, AES.MODE_ECB)
-            cipher_data = base64.b64encode(cipher.encrypt(data))
+            cipher = AES.new(key.encode('utf8'), AES.MODE_ECB)
+            cipher_data = cipher.encrypt(pad(data.decode("utf-8"), self.block_size))
         else:
             return data
 
         return cipher_data
 
     def decrypt(self, data):
+        key = 'abcdefghijklmnop'
         if self.mode == "CBC":
             raw = b64decode(data)
             self.cipher = AES.new(self.key, AES.MODE_CBC, raw[:self.block_size])
             decrypted_data = unpad(self.cipher.decrypt(raw[self.block_size:]), self.block_size)
         elif self.mode == "ECB":
-            raw = base64.b64decode(data)
-            cipher = AES.new(self.key, AES.MODE_ECB)
-            decrypted_data = unpad(cipher.decrypt(raw), self.block_size)
+            decipher = AES.new(key.encode('utf8'), AES.MODE_ECB)
+            decrypted_data = decipher.decrypt(data)
         else:
             return data
         return decrypted_data
@@ -117,8 +117,6 @@ class AppWindow(QMainWindow):
         label.setFont(QFont('Tahoma', 15))
         label.setAlignment(Qt.AlignCenter)
         label.setGeometry(0, 100, 720, 30)
-
-
 
         key_field = QLineEdit(self)
         key_field.setText("192.168.1.54")
@@ -567,10 +565,10 @@ class AppWindow(QMainWindow):
             self.sending_socket.send(self.encryptor.encrypt(str(file_size)))
             sleep(1)
 
-            print("will send", math.ceil(file_size / 1024), "packets")
+            print("will send", math.ceil(file_size / (1024 * 8), "packets")
             with open(file, "rb") as f:
                 while True:
-                    data = f.read(1024)
+                    data = f.read(1024 * 8)
                     if not data:
                         self.sending_socket.send(self.encryptor.encrypt(b"<END>".decode("utf-8")))
                         break
@@ -578,7 +576,7 @@ class AppWindow(QMainWindow):
                     self.sending_socket.send(self.encryptor.encrypt(data.decode("utf-8")))
                     i += 1
 
-                    window.progressBar.setValue(math.ceil(i / (file_size / 1024) * 100))
+                    window.progressBar.setValue(math.ceil(i / (file_size / (1024 * 8)) * 100))
                     # progress bar update here
 
             print("sent", i, "packets")
@@ -617,14 +615,14 @@ def receive_messages(listening_socket):
                 with open(os.path.join("downloads", f"recv_{file_name}"), "w") as f:
 
                     while True:
-                        data = listening_socket.recv(1024)
+                        data = listening_socket.recv(1024 * 8)
                         data = window.encryptor.decrypt(data)
                         if data[-5:] == b"<END>":
                             f.write(data[:-5].decode("utf-8"))
                             break
                         f.write(data.decode("utf-8"))
                         i += 1
-                        window.progressBar.setValue(math.ceil(i / (int(file_size) / 1024) * 100))
+                        window.progressBar.setValue(math.ceil(i / (int(file_size) / (1024 * 8)) * 100))
                         # sleep(1)
 
                 print("file received")
