@@ -54,15 +54,15 @@ class RSAkeys:
 
 
 class AESCipher:
-    def __init__(self, key, mode):
+    def __init__(self, key, mode, iv):
         self.key = md5(key.encode('utf8')).digest()
         self.mode = mode
+        self.iv = iv
 
     def encrypt(self, data):
         if self.mode == "CBC":
-            iv = get_random_bytes(AES.block_size)
-            self.cipher = AES.new(self.key, AES.MODE_CBC, iv)
-            cipher_data = b64encode(iv + self.cipher.encrypt(pad(data.encode('utf-8'), AES.block_size)))
+            self.cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
+            cipher_data = b64encode(self.iv + self.cipher.encrypt(pad(data.encode('utf-8'), AES.block_size)))
         elif self.mode == "ECB":
             data = pad(data.encode('utf-8'), AES.block_size)
             cipher = AES.new(self.key, AES.MODE_ECB)
@@ -94,19 +94,16 @@ class AppWindow(QMainWindow):
         self.own_ip = get_own_ip()
         self.partner_ip = ""
         self.encoding_mode = "None"
-
-
-        # TODO check if necessary
         self.rsa_keys = RSAkeys(1024)
-
         self.sess_key = ""
-        self.encryptor = AESCipher(self.sess_key, self.encoding_mode)
+        self.iv = ""
+        self.encryptor = AESCipher(self.sess_key, self.encoding_mode, self.iv)
         self.receive_thread = Thread()
         super().__init__()
         self.setWindowTitle("SCS Project - Encrypted Data Transmission (Not connected)")
         # self.setWindowIcon(QIcon("path/to/favicon.png"))
         self.setFixedSize(720, 540)  # Make the window non-resizable
-        self.setStyleSheet("background-color: #2c2f33;")
+        self.setStyleSheet("background-color: #2c2f33; color: #f0f0f0;")
 
         self.progressBar = QProgressBar(self)
         self.progressBar.setGeometry(0, 500, 720, 40)
@@ -223,16 +220,6 @@ class AppWindow(QMainWindow):
         back_button.setStyleSheet(button_style)
         back_button.hide()
 
-        # TODO:
-        #  Create pages for file exchange and for message exchange:
-        #  - add field for message content, radio buttons for encoding DONE
-        #  - add radio fields for encoding type DONE
-        #  - add send buttons DONE
-        #  - add file browsing LATER
-
-
-
-
         # Button press handlers
         def show_user_logged_in_gui():
             # hide all visible widgets and unhide all widgets for the message selection
@@ -298,7 +285,9 @@ class AppWindow(QMainWindow):
             self.partner_ip = ""
             self.encoding_mode = "None"
             self.sess_key = ""
-            self.encryptor = AESCipher(self.sess_key, self.encoding_mode)
+            self.iv = ""
+            self.rsa_keys = RSA(1024)
+            self.encryptor = AESCipher(self.sess_key, self.encoding_mode, self.iv)
 
             show_login_gui()
 
@@ -454,20 +443,24 @@ class AppWindow(QMainWindow):
             self.partner_ip = ip
 
             # RSA
-            client_socket.send(self.rsa_keys.public_key)
+            client_socket.sendall(self.rsa_keys.public_key)
             print("Sending public key")
 
-            encrypted_sess_key = client_socket.recv(1024)
-
+            encrypted_sess_key = client_socket.recv(128)
             self.sess_key = self.rsa_keys.decrypt_rsa(encrypted_sess_key, self.rsa_keys.private_key)
-
             # self.sess_key = client_socket.recv(1024)
             print("Received session key:", self.sess_key)
-            # TODO encrypt
-            self.encoding_mode = client_socket.recv(1024).decode('utf-8')
+
+            encrypted_encoding_mode = client_socket.recv(128)
+            self.encoding_mode = self.rsa_keys.decrypt_rsa(encrypted_encoding_mode, self.rsa_keys.private_key).decode(
+                'utf-8')
             print("Received encoding mode:", self.encoding_mode)
 
-            self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
+            encrypted_iv = client_socket.recv(128)
+            self.iv = self.rsa_keys.decrypt_rsa(encrypted_iv, self.rsa_keys.private_key)
+            print("Received iv:", self.iv)
+
+            self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode, self.iv)
             self.sending_socket = client_socket
 
             server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -506,26 +499,27 @@ class AppWindow(QMainWindow):
 
         self.listening_socket = client_socket
 
-        self.encoding_mode = encoding
-
         # RSA
         partner_public_key = self.listening_socket.recv(1024).decode("utf-8")
         # generate session key
         self.sess_key = os.urandom(16)
         # encrypt session key with peer's public key
+
         encrypted_sess_key = self.rsa_keys.encrypt_rsa(self.sess_key, partner_public_key)
         # send encrypted session key
-        self.listening_socket.send(encrypted_sess_key)
-
-
-        # self.sess_key = os.urandom(16)
-        #
-        # self.listening_socket.send(self.sess_key)
+        self.listening_socket.sendall(encrypted_sess_key)
         print("Sending session key:", self.sess_key)
-        self.listening_socket.send(self.encoding_mode.encode('utf-8'))
-        print("Sending encoding mode:", self.encoding_mode)
 
-        self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode)
+        encrypted_encoding_mode = self.rsa_keys.encrypt_rsa(self.encoding_mode.encode('utf-8'), partner_public_key)
+        self.listening_socket.sendall(encrypted_encoding_mode)
+        print("Sending encoding mode:", self.encoding_mode)
+        self.iv = get_random_bytes(AES.block_size)
+
+        encrypted_iv = self.rsa_keys.encrypt_rsa(self.iv, partner_public_key)
+        self.listening_socket.sendall(encrypted_iv)
+        print("Sending iv vector:", self.iv)
+
+        self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode, self.iv)
 
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_socket.connect((client_address[0], 12345))
