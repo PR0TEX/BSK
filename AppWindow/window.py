@@ -115,7 +115,7 @@ class AppWindow(QMainWindow):
         label.setGeometry(0, 100, 720, 30)
 
         key_field = QLineEdit(self)
-        key_field.setText("192.168.1.54")
+        # key_field.setText("192.168.1.59")
         key_field.setGeometry(140, 160, 440, 50)  # set the position and size of the key_field widget
         key_field.setStyleSheet("background-color: #ffffff; color: #2c2f33; border-radius: 10px; font-family: Arial; font-size: 16px;")
 
@@ -272,7 +272,7 @@ class AppWindow(QMainWindow):
             try:
                 self.sending_socket.send(self.encryptor.encrypt(b"<ENDCHAT>".decode("utf-8")))
             except Exception as error:
-                print(error)
+                # print(error)
                 pass
 
             self.listening_socket.close()
@@ -334,7 +334,7 @@ class AppWindow(QMainWindow):
         def show_file_selection_prompt():
             if select_file_prompt.exec():
                 fname = select_file_prompt.selectedFiles()[0]
-                print(fname)
+                # print(fname)
                 message_field.setText(fname)
 
         def confirm_message_pressed():
@@ -439,27 +439,26 @@ class AppWindow(QMainWindow):
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             client_socket.connect((host, port))
-            print('Connected to the server.')
+            # print('Connected to the server.')
             self.setWindowTitle("Connected to: " + ip)
             self.partner_ip = ip
 
             # RSA
-            client_socket.sendall(self.rsa_keys.public_key)
-            print("Sending public key")
+            client_socket.send(self.rsa_keys.public_key)
+            # print("Sending public key")
 
             encrypted_sess_key = client_socket.recv(128)
             self.sess_key = self.rsa_keys.decrypt_rsa(encrypted_sess_key, self.rsa_keys.private_key)
-            # self.sess_key = client_socket.recv(1024)
-            print("Received session key:", self.sess_key)
+            # print("Received session key:", self.sess_key)
 
             encrypted_encoding_mode = client_socket.recv(128)
             self.encoding_mode = self.rsa_keys.decrypt_rsa(encrypted_encoding_mode, self.rsa_keys.private_key).decode(
                 'utf-8')
-            print("Received encoding mode:", self.encoding_mode)
+            # print("Received encoding mode:", self.encoding_mode)
 
             encrypted_iv = client_socket.recv(128)
             self.iv = self.rsa_keys.decrypt_rsa(encrypted_iv, self.rsa_keys.private_key)
-            print("Received iv:", self.iv)
+            # print("Received iv:", self.iv)
 
             self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode, self.iv)
             self.sending_socket = client_socket
@@ -472,12 +471,11 @@ class AppWindow(QMainWindow):
             self.listening_socket = client_socket
 
             receive_thread = Thread(target=receive_messages, args=(self.listening_socket,))
-            # receive_thread = Thread(target=receive_file, args=(client_socket, self))
             receive_thread.start()
 
 
         except ConnectionRefusedError:
-            print('Unable to connect to the server.')
+            # print('Unable to connect to the server.')
             self.logout_button.click()
             return False
 
@@ -489,36 +487,32 @@ class AppWindow(QMainWindow):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.bind((host, port))
         server_socket.listen(1)
-        print('Waiting for incoming connections...')
+        # print('Waiting for incoming connections...')
 
         self.setWindowTitle("Waiting for somebody to connect...")
 
         client_socket, client_address = server_socket.accept()
-        print('Connected to', client_address)
+        # print('Connected to', client_address)
         self.setWindowTitle("Connected to: " + client_address[0])
         self.partner_ip = client_address[0]
 
         self.listening_socket = client_socket
 
-        # RSA
         partner_public_key = self.listening_socket.recv(1024).decode("utf-8")
-        # generate session key
         self.sess_key = os.urandom(16)
-        # encrypt session key with peer's public key
 
         encrypted_sess_key = self.rsa_keys.encrypt_rsa(self.sess_key, partner_public_key)
-        # send encrypted session key
-        self.listening_socket.sendall(encrypted_sess_key)
-        print("Sending session key:", self.sess_key)
+        self.listening_socket.send(encrypted_sess_key)
+        # print("Sending session key:", self.sess_key)
 
         encrypted_encoding_mode = self.rsa_keys.encrypt_rsa(self.encoding_mode.encode('utf-8'), partner_public_key)
-        self.listening_socket.sendall(encrypted_encoding_mode)
-        print("Sending encoding mode:", self.encoding_mode)
+        self.listening_socket.send(encrypted_encoding_mode)
+        # print("Sending encoding mode:", self.encoding_mode)
         self.iv = get_random_bytes(AES.block_size)
 
         encrypted_iv = self.rsa_keys.encrypt_rsa(self.iv, partner_public_key)
-        self.listening_socket.sendall(encrypted_iv)
-        print("Sending iv vector:", self.iv)
+        self.listening_socket.send(encrypted_iv)
+        # print("Sending iv vector:", self.iv)
 
         self.encryptor = AESCipher(self.sess_key.hex(), self.encoding_mode, self.iv)
 
@@ -527,22 +521,20 @@ class AppWindow(QMainWindow):
         self.sending_socket = client_socket
 
         self.receive_thread = Thread(target=receive_messages, args=(self.listening_socket,))
-        #receive_thread = Thread(target=receive_file, args=(client_socket,))
         self.receive_thread.start()
 
     def send_message(self, content):
-        # Send message here
         try:
             self.sending_socket.send(self.encryptor.encrypt(content))
             self.setWindowTitle(self.windowTitle()+" -- Message sent!")
         except:
-            print('An error occurred while sending the message.')
+            # print('An error occurred while sending the message.')
             self.logout_button.click()
 
     def send_file(self, file):
         i = 0
         try:
-            print("sending file...")
+            # print("sending file...")
             file_name = file.split("/")[-1]
             file_size = os.path.getsize(file)
 
@@ -553,7 +545,7 @@ class AppWindow(QMainWindow):
             self.sending_socket.send(self.encryptor.encrypt(str(file_size)))
             sleep(0.1)
             self.setWindowTitle(self.windowTitle() + " -- sending file "+file_name+"...")
-            print("will send", math.ceil(file_size / (1024 * 4)), "packets")
+            # print("will send", math.ceil(file_size / (1024 * 4)), "packets")
             with open(file, "rb") as f:
                 while True:
                     data = f.read(1024 * 4)
@@ -563,17 +555,15 @@ class AppWindow(QMainWindow):
 
                     self.sending_socket.send(self.encryptor.encrypt(data.decode("utf-8")))
                     i += 1
-
                     sleep(5/1000)
-
                     window.progressBar.setValue(math.ceil(i / (file_size / (1024 * 4)) * 100))
 
-            print("sent", i, "packets")
+            # print("sent", i, "packets")
 
         except Exception as error:
-            print(i)
-            print("There was an error while sending the file")
-            print(error)
+            # print(i)
+            # print("There was an error while sending the file")
+            # print(error)
             self.logout_button.click()
         finally:
             self.setWindowTitle("Connected to: "+self.partner_ip+" -- file sent!")
@@ -585,21 +575,16 @@ def receive_messages(listening_socket):
     while True:
         i = 0
         try:
-            # CBC
             ciphertext = listening_socket.recv(1024)
-            # Generate the same key used by the server
-
-            # message = decrypt_cbc(key, ciphertext).decode('utf-8')
-            # ECB
             message = window.encryptor.decrypt(ciphertext)
 
             if message == b"<FILE>":
                 file_name = listening_socket.recv(1024)
                 file_name = window.encryptor.decrypt(file_name).decode("utf-8")
-                print(file_name)
+                # print(file_name)
                 file_size = listening_socket.recv(1024)
                 file_size = window.encryptor.decrypt(file_size).decode("utf-8")
-                print(file_size)
+                # print(file_size)
 
                 window.setWindowTitle(window.windowTitle() + " -- downloading file " + file_name + "...")
 
@@ -619,23 +604,18 @@ def receive_messages(listening_socket):
                         window.progressBar.setValue(math.ceil(i / (int(file_size) / (1024 * 4)) * 100))
 
 
-                print("file received")
+                # print("file received")
                 window.setWindowTitle("Connected to: " + window.partner_ip + " -- file received!")
-                #window.create_popup("File received!", "Received "+file_name, "ok").exec()
-
             elif message == b"<ENDCHAT>":
-                #window.create_popup("Disconnecting", "Lost connection with partner", "ok")
                 window.logout_button.click()
                 return
             else:
-                #window.create_popup("Message received!", message.decode("utf-8"), "ok").exec()
                 window.setWindowTitle("Connected to: " + window.partner_ip + " -- Message: " + message.decode("utf-8"))
-
-                print(message)
+                # print(message)
         except Exception as error:
-            print("There was an error while receiving messages")
-            print(error)
-            print(i)
+            # print("There was an error while receiving messages")
+            # print(error)
+            # print(i)
             window.logout_button.click()
             break
 
