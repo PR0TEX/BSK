@@ -559,11 +559,12 @@ class AppWindow(QMainWindow):
             file_size = os.path.getsize(file)
 
             self.sending_socket.send(self.encryptor.encrypt(b"<FILE>".decode("utf-8")))
-
+            sleep(1)
             self.sending_socket.send(self.encryptor.encrypt(file_name))
             sleep(1)
             self.sending_socket.send(self.encryptor.encrypt(str(file_size)))
-            sleep(1)
+
+
 
             print("will send", math.ceil(file_size / (1024 * 4)), "packets")
             with open(file, "rb") as f:
@@ -576,10 +577,14 @@ class AppWindow(QMainWindow):
                     self.sending_socket.send(self.encryptor.encrypt(data.decode("utf-8")))
                     i += 1
 
+
+
                     window.progressBar.setValue(math.ceil(i / (file_size / (1024 * 4)) * 100))
                     # progress bar update here
 
             print("sent", i, "packets")
+
+            self.sending_socket.settimeout(0)
         except Exception as error:
             print(i)
             print("There was an error while sending the file")
@@ -613,7 +618,7 @@ def receive_messages(listening_socket):
                     os.makedirs("downloads")
 
                 with open(os.path.join("downloads", f"recv_{file_name}"), "w") as f:
-
+                    listening_socket.settimeout(0.5)
                     while True:
                         data = listening_socket.recv(1024 * 4 * 2)
                         data = window.encryptor.decrypt(data)
@@ -626,6 +631,7 @@ def receive_messages(listening_socket):
                         # sleep(1)
 
                 print("file received")
+                listening_socket.settimeout(0)
                 #window.create_popup("File received!", "Received "+file_name, "ok").exec()
 
             elif message == b"<ENDCHAT>":
