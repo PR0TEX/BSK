@@ -117,7 +117,6 @@ class AppWindow(QMainWindow):
         label.setGeometry(0, 100, 720, 30)
 
         key_field = QLineEdit(self)
-        key_field.setText("192.168.1.54")
         key_field.setGeometry(140, 160, 440, 50)  # set the position and size of the key_field widget
         key_field.setStyleSheet("background-color: #ffffff; color: #2c2f33; border-radius: 10px; font-family: Arial; font-size: 16px;")
 
