@@ -112,7 +112,7 @@ class AppWindow(QMainWindow):
         self.progressBar.setGeometry(0, 500, 720, 40)
 
         label = QLabel(self)
-        label.setText('Enter a key:')
+        label.setText('Enter IP:')
         label.setFont(QFont('Tahoma', 15))
         label.setAlignment(Qt.AlignCenter)
         label.setGeometry(0, 100, 720, 30)
@@ -145,6 +145,22 @@ class AppWindow(QMainWindow):
         connect_to_room_button = QPushButton("Connect to room", self)
         connect_to_room_button.setGeometry(380, 240, 200, 50)
         connect_to_room_button.setStyleSheet(button_style)
+
+        label_encoding = QLabel(self)
+        label_encoding.setText('Select encoding:')
+        label_encoding.setFont(QFont('Tahoma', 15))
+        label_encoding.setAlignment(Qt.AlignCenter)
+        label_encoding.setGeometry(0, 300, 720, 30)
+
+        ecb_radio = QRadioButton("ECB", self)
+        cbc_radio = QRadioButton("CBC", self)
+        ecb_radio.setFont(QFont('Tahoma', 15))
+        cbc_radio.setFont(QFont('Tahoma', 15))
+        ecb_radio.setGeometry(320, 340, 70, 30)
+        cbc_radio.setGeometry(320, 370, 70, 30)
+        ecb_radio.setChecked(True)
+
+        radios = [ecb_radio, cbc_radio]
 
         # After logging in
         send_message_button = QPushButton("Send Message", self)
@@ -192,28 +208,10 @@ class AppWindow(QMainWindow):
         label_message.hide()
 
         message_field = QLineEdit(self)
-        message_field.setGeometry(140, 110, 440, 50)  # set the position and size of the key_field widget
+        message_field.setGeometry(140, 130, 440, 50)  # set the position and size of the key_field widget
         message_field.setStyleSheet("background-color: #ffffff; color: #2c2f33; border-radius: 10px; font-family: Arial; font-size: 12px;")
         message_field.hide()
 
-        label_encoding = QLabel(self)
-        label_encoding.setText('Select encoding:')
-        label_encoding.setFont(QFont('Tahoma', 15))
-        label_encoding.setAlignment(Qt.AlignCenter)
-        label_encoding.setGeometry(0, 180, 720, 30)
-        label_encoding.hide()
-
-        ecb_radio = QRadioButton("ECB", self)
-        cbc_radio = QRadioButton("CBC", self)
-        ecb_radio.setFont(QFont('Tahoma', 15))
-        cbc_radio.setFont(QFont('Tahoma', 15))
-        ecb_radio.setGeometry(320, 210, 70, 30)
-        cbc_radio.setGeometry(320, 240, 70, 30)
-        ecb_radio.setChecked(True)
-
-        radios = [ecb_radio, cbc_radio]
-        for option in radios:
-            option.hide()
 
         confirm_message_button = QPushButton("Send message", self)
         confirm_message_button.setGeometry(200, 290, 320, 60)
@@ -270,9 +268,9 @@ class AppWindow(QMainWindow):
             connect_to_room_button.show()
             label_message.hide()
             message_field.hide()
-            label_encoding.hide()
+            label_encoding.show()
             for opt in radios:
-                opt.hide()
+                opt.show()
 
             confirm_message_button.hide()
             back_button.hide()
@@ -319,9 +317,6 @@ class AppWindow(QMainWindow):
             message_field.setReadOnly(False)
             message_field.setText("")
             message_field.show()
-            label_encoding.show()
-            for opt in radios:
-                opt.show()
 
             confirm_message_button.show()
             back_button.show()
@@ -342,9 +337,6 @@ class AppWindow(QMainWindow):
             message_field.setReadOnly(True)
             message_field.setText("")
             message_field.show()
-            label_encoding.show()
-            for opt in radios:
-                opt.show()
 
             confirm_file_button.show()
             back_button.show()
