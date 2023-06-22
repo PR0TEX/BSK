@@ -562,7 +562,7 @@ class AppWindow(QMainWindow):
             sleep(1)
             self.sending_socket.send(self.encryptor.encrypt(str(file_size)))
 
-
+            self.setWindowTitle(self.windowTitle() + " -- sending file "+file_name+"...")
             print("will send", math.ceil(file_size / (1024 * 4)), "packets")
             with open(file, "rb") as f:
                 while True:
@@ -585,6 +585,8 @@ class AppWindow(QMainWindow):
             print("There was an error while sending the file")
             print(error)
             self.logout_button.click()
+        finally:
+            self.setWindowTitle("Connected to: "+self.partner_ip)
 
 
 
@@ -608,6 +610,8 @@ def receive_messages(listening_socket):
                 file_size = listening_socket.recv(1024)
                 file_size = window.encryptor.decrypt(file_size).decode("utf-8")
                 print(file_size)
+
+                window.setWindowTitle(window.windowTitle() + " -- downloading file " + file_name + "...")
 
                 if not os.path.exists("downloads"):
                     os.makedirs("downloads")
@@ -643,6 +647,8 @@ def receive_messages(listening_socket):
             print(i)
             window.logout_button.click()
             break
+        finally:
+            window.setWindowTitle("Connected to: "+window.partner_ip)
 
 
 if __name__ == "__main__":
