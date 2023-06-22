@@ -577,6 +577,7 @@ class AppWindow(QMainWindow):
                     self.sending_socket.send(self.encryptor.encrypt(data.decode("utf-8")))
                     i += 1
 
+                    sleep(1/1000)
 
 
                     window.progressBar.setValue(math.ceil(i / (file_size / (1024 * 4)) * 100))
@@ -627,8 +628,8 @@ def receive_messages(listening_socket):
                         f.write(data.decode("utf-8"))
                         i += 1
                         window.progressBar.setValue(math.ceil(i / (int(file_size) / (1024 * 4)) * 100))
-                        if i%10 == 0:
-                            sleep(1/1000)
+
+
 
                 print("file received")
                 #window.create_popup("File received!", "Received "+file_name, "ok").exec()
