@@ -446,7 +446,7 @@ class AppWindow(QMainWindow):
         dlg = CustomDialog(dialog_type=mode) if mode else CustomDialog()
         dlg.set_message(message)
         dlg.set_title(title)
-        return dlg
+        dlg.exec()
 
 
     def connect_to_room(self, ip):
@@ -625,7 +625,7 @@ def receive_messages(listening_socket):
                 #window.create_popup("File received!", "Received "+file_name, "ok").exec()
 
             elif message == b"<ENDCHAT>":
-                window.create_popup("Disconnecting", "Lost connection with partner", "ok").show()
+                window.create_popup("Disconnecting", "Lost connection with partner", "ok")
                 window.logout_button.click()
                 return
             else:
