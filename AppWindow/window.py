@@ -578,21 +578,22 @@ class AppWindow(QMainWindow):
 
 def recv_msg(sock, encryptor):
     # Read message length and unpack it into an integer
-    raw_msglen = recvall(sock, 4)
+    raw_msglen = recvall(sock, 4, encryptor, read_len=True)
     if not raw_msglen:
         return None
     msglen = struct.unpack('>I', raw_msglen)[0]
     # Read the message data
     return recvall(sock, msglen, encryptor)
 
-def recvall(sock, n, encryptor):
+def recvall(sock, n, encryptor, read_len=False):
     # Helper function to recv n bytes or return None if EOF is hit
     data = bytearray()
     while len(data) < n:
         packet = sock.recv(n - len(data))
-        packet = encryptor.decrypt(packet)
         if not packet:
             return None
+        if not read_len:
+            packet = encryptor.decrypt(packet)
         data.extend(packet)
     return data
 
