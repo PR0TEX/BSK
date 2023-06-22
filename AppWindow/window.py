@@ -618,16 +618,27 @@ def receive_messages(listening_socket):
                 if not os.path.exists("downloads"):
                     os.makedirs("downloads")
 
+                arr = []
+
                 with open(os.path.join("downloads", f"recv_{file_name}"), "w") as f:
                     while True:
                         data = listening_socket.recv(1024 * 4 * 2)
-                        data = window.encryptor.decrypt(data)
+                        #data = window.encryptor.decrypt(data)
+                        arr.append(data)
                         if data[-5:] == b"<END>":
-                            f.write(data[:-5].decode("utf-8"))
+                            #f.write(data[:-5].decode("utf-8"))
                             break
-                        f.write(data.decode("utf-8"))
+                        #f.write(data.decode("utf-8"))
                         i += 1
                         window.progressBar.setValue(math.ceil(i / (int(file_size) / (1024 * 4)) * 100))
+
+                    i = 0
+                    for elem in arr:
+                        i += 1
+                        data = window.encryptor.decrypt(elem)
+                        f.write(data.decode("utf-8") if not data[-5:] == b"<END>" else data[:-5].decode("utf-8"))
+                        window.progressBar.setValue(math.ceil((i / len(arr)) * 100))
+
 
 
 
