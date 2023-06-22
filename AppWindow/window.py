@@ -57,14 +57,15 @@ class AESCipher:
     def __init__(self, key, mode):
         self.key = md5(key.encode('utf8')).digest()
         self.mode = mode
+        self.block_size = 16
 
     def encrypt(self, data):
         if self.mode == "CBC":
-            iv = get_random_bytes(AES.block_size)
+            iv = get_random_bytes(self.block_size)
             self.cipher = AES.new(self.key, AES.MODE_CBC, iv)
-            cipher_data = b64encode(iv + self.cipher.encrypt(pad(data.encode('utf-8'), AES.block_size)))
+            cipher_data = b64encode(iv + self.cipher.encrypt(pad(data.encode('utf-8'), self.block_size)))
         elif self.mode == "ECB":
-            data = pad(data.encode(), AES.block_size)
+            data = pad(data.encode(), self.block_size)
             cipher = AES.new(self.key, AES.MODE_ECB)
             cipher_data = base64.b64encode(cipher.encrypt(data))
         else:
@@ -75,12 +76,12 @@ class AESCipher:
     def decrypt(self, data):
         if self.mode == "CBC":
             raw = b64decode(data)
-            self.cipher = AES.new(self.key, AES.MODE_CBC, raw[:AES.block_size])
-            decrypted_data = unpad(self.cipher.decrypt(raw[AES.block_size:]), AES.block_size)
+            self.cipher = AES.new(self.key, AES.MODE_CBC, raw[:self.block_size])
+            decrypted_data = unpad(self.cipher.decrypt(raw[self.block_size:]), self.block_size)
         elif self.mode == "ECB":
             raw = base64.b64decode(data)
             cipher = AES.new(self.key, AES.MODE_ECB)
-            decrypted_data = unpad(cipher.decrypt(raw), AES.block_size)
+            decrypted_data = unpad(cipher.decrypt(raw), self.block_size)
         else:
             return data
         return decrypted_data
@@ -120,6 +121,7 @@ class AppWindow(QMainWindow):
 
 
         key_field = QLineEdit(self)
+        key_field.setText("192.168.1.54")
         key_field.setGeometry(140, 160, 440, 50)  # set the position and size of the key_field widget
         key_field.setStyleSheet("background-color: #ffffff; color: #2c2f33; border-radius: 10px; font-family: Arial; font-size: 16px;")
 
@@ -551,6 +553,7 @@ class AppWindow(QMainWindow):
             self.logout_button.click()
 
     def send_file(self, file):
+        i = 0
         try:
             print("sending file...")
             file_name = file.split("/")[-1]
@@ -565,7 +568,6 @@ class AppWindow(QMainWindow):
             sleep(1)
 
             print("will send", math.ceil(file_size / 1024), "packets")
-            i = 0
             with open(file, "rb") as f:
                 while True:
                     data = f.read(1024)
@@ -573,7 +575,7 @@ class AppWindow(QMainWindow):
                         self.sending_socket.send(self.encryptor.encrypt(b"<END>".decode("utf-8")))
                         break
 
-                    self.sending_socket.send(self.encryptor.encrypt(data))
+                    self.sending_socket.send(self.encryptor.encrypt(data.decode("utf-8")))
                     i += 1
 
                     window.progressBar.setValue(math.ceil(i / (file_size / 1024) * 100))
@@ -581,7 +583,9 @@ class AppWindow(QMainWindow):
 
             print("sent", i, "packets")
         except Exception as error:
+            print(i)
             print("There was an error while sending the file")
+            print(error)
             self.logout_button.click()
 
 
