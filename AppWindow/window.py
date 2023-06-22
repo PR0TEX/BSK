@@ -596,13 +596,18 @@ def recv_msg(sock, encryptor):
 def recvall(sock, n, encryptor, read_len=False):
     # Helper function to recv n bytes or return None if EOF is hit
     data = bytearray()
-    while len(data) < n:
+    received_len = 0
+    while received_len < n:
         if read_len:
             packet = sock.recv(n - len(data))
+            received_len += packet
         else:
-            packet = encryptor.decrypt(sock.recv(n - len(data)))
+            packet = sock.recv(n - len(data))
+            received_len += packet
+            packet = encryptor.decrypt(packet)
         if not packet:
             return None
+
         data.extend(packet)
     return data
 
