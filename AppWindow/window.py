@@ -574,7 +574,7 @@ class AppWindow(QMainWindow):
                     self.sending_socket.send(self.encryptor.encrypt(data.decode("utf-8")))
                     i += 1
 
-                    sleep(1/1000)
+                    sleep(15/1000)
 
                     window.progressBar.setValue(math.ceil(i / (file_size / (1024 * 4)) * 100))
 
@@ -611,7 +611,7 @@ def receive_messages(listening_socket):
                 file_size = window.encryptor.decrypt(file_size).decode("utf-8")
                 print(file_size)
 
-                window.setWindowTitle(window.windowTitle() + " -- downloading file " + file_name + "...")
+                #window.setWindowTitle(window.windowTitle() + " -- downloading file " + file_name + "...")
 
                 if not os.path.exists("downloads"):
                     os.makedirs("downloads")
