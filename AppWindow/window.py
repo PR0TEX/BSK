@@ -588,7 +588,7 @@ class AppWindow(QMainWindow):
             print(error)
             self.logout_button.click()
         finally:
-            self.setWindowTitle("Connected to: "+self.partner_ip)
+            self.setWindowTitle("Connected to: "+self.partner_ip+" -- file sent!")
 
 
 
@@ -613,7 +613,7 @@ def receive_messages(listening_socket):
                 file_size = window.encryptor.decrypt(file_size).decode("utf-8")
                 print(file_size)
 
-                #window.setWindowTitle(window.windowTitle() + " -- downloading file " + file_name + "...")
+                window.setWindowTitle(window.windowTitle() + " -- downloading file " + file_name + "...")
 
                 if not os.path.exists("downloads"):
                     os.makedirs("downloads")
@@ -638,7 +638,7 @@ def receive_messages(listening_socket):
             elif message == b"<ENDCHAT>":
                 #window.create_popup("Disconnecting", "Lost connection with partner", "ok")
                 window.logout_button.click()
-                #window.setWindowTitle("Partner disconnected")
+                window.setWindowTitle("Partner disconnected")
                 return
             else:
                 window.create_popup("Message received!", message.decode("utf-8"), "ok").exec()
