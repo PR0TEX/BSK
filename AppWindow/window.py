@@ -585,8 +585,8 @@ class AppWindow(QMainWindow):
             print("There was an error while sending the file")
             print(error)
             self.logout_button.click()
-        finally:
-            self.setWindowTitle("Connected to: "+self.partner_ip)
+        # finally:
+        #     self.setWindowTitle("Connected to: "+self.partner_ip)
 
 
 
@@ -647,8 +647,8 @@ def receive_messages(listening_socket):
             print(i)
             window.logout_button.click()
             break
-        finally:
-            window.setWindowTitle("Connected to: "+window.partner_ip)
+        # finally:
+        #     window.setWindowTitle("Connected to: "+window.partner_ip)
 
 
 if __name__ == "__main__":
