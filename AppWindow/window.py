@@ -548,10 +548,10 @@ class AppWindow(QMainWindow):
             self.sending_socket.send(self.encryptor.encrypt(str(file_size)))
             sleep(0.1)
             self.setWindowTitle(self.windowTitle() + " -- sending file "+file_name+"...")
-            print("will send", math.ceil(file_size / (1024)), "packets")
+            print("will send", math.ceil(file_size / (1024 * 4)), "packets")
             with open(file, "rb") as f:
                 while True:
-                    data = f.read(1024)
+                    data = f.read(1024 * 4)
                     if not data:
                         encrypted_data = self.encryptor.encrypt(b"<END>".decode("utf-8"))
                         encrypted_data = struct.pack('>I', len(encrypted_data)) + encrypted_data
