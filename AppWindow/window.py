@@ -21,8 +21,13 @@ from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad, unpad
 from Crypto.PublicKey import RSA
 
-from time import sleep
+from time import sleep, perf_counter
 
+def custom_sleep(duration, get_now=perf_counter):
+    now = get_now()
+    end = now + duration
+    while now < end:
+        now = get_now()
 
 class RSAkeys:
     def __init__(self, size):
@@ -577,8 +582,7 @@ class AppWindow(QMainWindow):
                     self.sending_socket.send(self.encryptor.encrypt(data.decode("utf-8")))
                     i += 1
 
-                    #sleep(1/1000)
-
+                    custom_sleep(1/1000)
 
                     window.progressBar.setValue(math.ceil(i / (file_size / (1024 * 4)) * 100))
                     # progress bar update here
@@ -623,21 +627,21 @@ def receive_messages(listening_socket):
                 with open(os.path.join("downloads", f"recv_{file_name}"), "w") as f:
                     while True:
                         data = listening_socket.recv(1024 * 4 * 2)
-                        #data = window.encryptor.decrypt(data)
+                        data = window.encryptor.decrypt(data)
                         arr.append(data)
                         if data[-5:] == b"<END>":
-                            #f.write(data[:-5].decode("utf-8"))
+                            f.write(data[:-5].decode("utf-8"))
                             break
-                        #f.write(data.decode("utf-8"))
+                        f.write(data.decode("utf-8"))
                         i += 1
                         window.progressBar.setValue(math.ceil(i / (int(file_size) / (1024 * 4)) * 100))
 
-                    i = 0
-                    for elem in arr:
-                        i += 1
-                        data = window.encryptor.decrypt(elem)
-                        f.write(data.decode("utf-8") if not data[-5:] == b"<END>" else data[:-5].decode("utf-8"))
-                        window.progressBar.setValue(math.ceil((i / len(arr)) * 100))
+                    # i = 0
+                    # for elem in arr:
+                    #     i += 1
+                    #     data = window.encryptor.decrypt(elem)
+                    #     f.write(data.decode("utf-8") if not data[-5:] == b"<END>" else data[:-5].decode("utf-8"))
+                    #     window.progressBar.setValue(math.ceil((i / len(arr)) * 100))
 
 
 
