@@ -57,7 +57,7 @@ class AESCipher:
     def __init__(self, key, mode):
         self.key = md5(key.encode('utf8')).digest()
         self.mode = mode
-        self.block_size = 16
+        self.block_size = 32
 
     def encrypt(self, data):
         if self.mode == "CBC":
@@ -640,6 +640,7 @@ def receive_messages(listening_socket):
         except Exception as error:
             print("There was an error while receiving messages")
             print(error)
+            print(i)
             window.logout_button.click()
             break
 
